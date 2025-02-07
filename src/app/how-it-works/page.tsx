@@ -1,6 +1,7 @@
 "use client";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+
+import Header from "../blog/components/Header";
+import Footer from "../blog/components/Footer";
 
 export default function HowItWorks() {
   return (
@@ -14,7 +15,7 @@ export default function HowItWorks() {
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">1. Generate Your Temporary Email</h2>
               <p className="text-gray-600">
-                Click the "Generate Email" button to instantly create your disposable email address. 
+                Click the &quot;Generate Email&quot; button to instantly create your disposable email address. 
                 No registration or personal information required.
               </p>
             </div>
@@ -53,4 +54,4 @@ export default function HowItWorks() {
       <Footer />
     </div>
   );
-} 
+}

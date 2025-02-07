@@ -1,7 +1,5 @@
-import Header from "../../components/Header";
-import Footer from "../../components/Footer";
-import { notFound } from "next/navigation";
-import Image from "next/image";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 const blogContent = {
   "why-use-temporary-email": {

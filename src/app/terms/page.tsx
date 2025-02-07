@@ -1,6 +1,6 @@
 "use client";
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import Header from "../blog/components/Header";
+import Footer from "../blog/components/Footer";
 
 export default function Terms() {
   return (
@@ -9,7 +9,7 @@ export default function Terms() {
       <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100 py-12">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Terms of Service</h1>
-          
+
           <div className="space-y-8 bg-white rounded-xl shadow-lg p-8">
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Service Usage</h2>
@@ -28,7 +28,7 @@ export default function Terms() {
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">Limitations</h2>
               <p className="text-gray-600">
-                The service is provided "as is" without warranties. We reserve the right to modify or terminate the service at any time.
+                The service is provided &quot;as is&quot; without warranties. We reserve the right to modify or terminate the service at any time.
               </p>
             </div>
           </div>
@@ -37,4 +37,4 @@ export default function Terms() {
       <Footer />
     </div>
   );
-} 
+}

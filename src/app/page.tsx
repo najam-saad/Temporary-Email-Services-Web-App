@@ -1,55 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Mail } from "lucide-react";
-import EmailCard from "./EmailCard";
-import EmailGenerator from "./EmailGenerator";
-import Header from "../app/components/Header";
-import Footer from "../app/components/Footer";
-import Image from "next/image";
-import CountdownTimer from "./components/CountdownTimer";
 
-interface Email {
-  id: string;
-  subject: string;
-  sender: string;
-  time: string;
-  preview: string;
-  content: string;
-  read: boolean;
-}
+import EmailGenerator from "./EmailGenerator";
+import Header from "./blog/components/Header";
+import Footer from "./blog/components/Footer";
+import Image from "next/image";
 
 export default function Home() {
   const [email, setEmail] = useState<string>("");
-  const [duration, setDuration] = useState<number>(20);
-  const [inbox, setInbox] = useState<Email[]>([]);
-  const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchInbox = async () => {
-    if (!email) return;
-    setRefreshing(true);
-    try {
-      const response = await fetch(`http://localhost:5000/api/emails/${email}`);
-      const data = await response.json();
-      setInbox(data);
-    } catch (error) {
-      console.error("Error fetching inbox:", error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (email) {
-      const interval = setInterval(fetchInbox, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [email]);
-
-  const handleEmailGenerate = (newEmail: string, newDuration: number) => {
+  const handleEmailGenerate = (newEmail: string) => {
     setEmail(newEmail);
-    setDuration(newDuration);
   };
 
   return (

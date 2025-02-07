@@ -1,7 +1,7 @@
 "use client";
 
-import Header from "../components/Header";
-import Footer from "../components/Footer";
+import Header from "../blog/components/Header";
+import Footer from "../blog/components/Footer";
 
 export default function FAQ() {
   return (
