@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
 import EmailGenerator from "./blog/components/EmailGenerator";
 import Header from "./blog/components/Header";
 import Footer from "./blog/components/Footer";
