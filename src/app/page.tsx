@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-<<<<<<< HEAD
 import EmailGenerator from "./blog/components/EmailGenerator";
-=======
-import EmailGenerator from "./components/EmailGenerator";
->>>>>>> ea047a4 (fixed errors)
 import Header from "./blog/components/Header";
 import Footer from "./blog/components/Footer";
 import Image from "next/image";

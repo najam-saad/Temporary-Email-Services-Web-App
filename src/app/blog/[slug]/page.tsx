@@ -1,9 +1,8 @@
-"use client"; 
+"use client";
 
-import Image from "next/image"; // ✅ Added missing import
+import Image from "next/image";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-//import EmailGenerator from "../components/EmailGenerator"; // ✅ Added missing import
 
 const blogPost = {
   title: "Why 20 Minutes is Better Than 10 for Temporary Emails",
@@ -18,7 +17,7 @@ const blogPost = {
         In the fast-paced world of digital services, timing is everything. While the industry standard has been set at 10 minutes for temporary email services, our research and user feedback have consistently shown that 20 minutes provides the optimal balance between security and functionality.
       </p>
     </div>
-  `,
+  `
 };
 
 export default function BlogPost() {
