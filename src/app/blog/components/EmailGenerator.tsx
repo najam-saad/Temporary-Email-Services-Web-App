@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Copy, Clock } from 'lucide-react';
+import axios from 'axios';
 
 interface EmailGeneratorProps {
   onGenerate: (email: string, duration: number) => void;
@@ -8,7 +9,9 @@ interface EmailGeneratorProps {
 export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
-  const [duration, setDuration] = useState(20); // Default 20 minutes
+  const [duration, setDuration] = useState(20);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const durationOptions = [
     { value: 5, label: '5 minutes' },
@@ -18,13 +21,30 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
     { value: 60, label: '1 hour' },
   ];
 
-  const generateEmail = () => {
-    const randomString = Math.random().toString(36).substring(2, 8);
-    const domains = ['ahaks.com', 'tempmail.org', 'disposable.com'];
-    const randomDomain = domains[Math.floor(Math.random() * domains.length)];
-    const newEmail = `${randomString}@${randomDomain}`;
-    setEmail(newEmail);
-    onGenerate(newEmail, duration);
+  const generateEmail = async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const domains = ['ahaks.com', 'tempmail.org', 'disposable.com'];
+      const randomDomain = domains[Math.floor(Math.random() * domains.length)];
+      const newEmail = `${randomString}@${randomDomain}`;
+      
+      // Create temporary email through API
+      await axios.post('/api/create-temp-email', {
+        email: newEmail,
+        expireTime: duration
+      });
+
+      setEmail(newEmail);
+      onGenerate(newEmail, duration);
+    } catch (err) {
+      setError('Failed to generate email. Please try again.');
+      console.error('Error generating email:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const copyToClipboard = async () => {
@@ -47,6 +67,7 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
             className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
           >
             {durationOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -67,10 +88,13 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
           />
           <button
             onClick={copyToClipboard}
+            disabled={!email || isLoading}
             className={`p-4 rounded-lg transition-all duration-300 ${
               copied 
                 ? 'bg-green-500 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : email 
+                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
             title="Copy to clipboard"
           >
@@ -78,15 +102,23 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
           </button>
           <button
             onClick={generateEmail}
-            className="p-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={isLoading}
+            className={`p-4 bg-blue-600 text-white rounded-lg transition-colors ${
+              isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
           >
-            Generate
+            {isLoading ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>
       {copied && (
         <p className="text-sm text-green-600 mt-2">
           Copied to clipboard!
+        </p>
+      )}
+      {error && (
+        <p className="text-sm text-red-600 mt-2">
+          {error}
         </p>
       )}
     </div>

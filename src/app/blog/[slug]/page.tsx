@@ -1,9 +1,9 @@
-"use client";
+"use client"; 
 
 import Image from "next/image"; // ✅ Added missing import
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import EmailGenerator from "../components/EmailGenerator"; // ✅ Added missing import
+//import EmailGenerator from "../components/EmailGenerator"; // ✅ Added missing import
 
 const blogPost = {
   title: "Why 20 Minutes is Better Than 10 for Temporary Emails",
