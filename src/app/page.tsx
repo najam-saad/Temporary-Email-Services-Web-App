@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 import EmailGenerator from "./blog/components/EmailGenerator";
 import Header from "./blog/components/Header";
@@ -8,10 +8,12 @@ import Footer from "./blog/components/Footer";
 import Image from "next/image";
 
 export default function Home() {
-  const [email, setEmail] = useState<string>("");
+  const [emailAddress, setEmailAddress] = useState<string>("");
 
   const handleEmailGenerate = (newEmail: string) => {
-    setEmail(newEmail);
+    setEmailAddress(newEmail);
+    // You can add functionality here to use the email address
+    console.log('Generated email:', newEmail);
   };
 
   return (

@@ -4,15 +4,20 @@ import axios from 'axios';
 
 // Email store (Note: This will reset on each function call in serverless)
 // Consider using a database like MongoDB or Redis instead
-let emailStore: {
+const emailStore: {
   [key: string]: {
-    messages: any[];
+    messages: Array<{
+      from: string;
+      subject: string;
+      content: string;
+      receivedAt: number;
+    }>;
     expiresAt: number;
   };
 } = {};
 
 // SMTP Configuration
-const transporter = nodemailer.createTransport({
+export const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
