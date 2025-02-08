@@ -1,138 +1,104 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock, Copy } from 'lucide-react';
 
 interface EmailGeneratorProps {
   onGenerate: (email: string, duration: number) => void;
+  currentEmail?: string;
 }
 
-export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
-  const [email, setEmail] = useState('');
-  const [copied, setCopied] = useState(false);
+export default function EmailGenerator({ onGenerate, currentEmail }: EmailGeneratorProps) {
   const [duration, setDuration] = useState(10);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const durationOptions = [
-    { value: 5, label: '5 minutes' },
-    { value: 10, label: '10 minutes' },
-    { value: 20, label: '20 minutes' },
-    { value: 30, label: '30 minutes' },
-    { value: 60, label: '1 hour' },
-  ];
+  // Generate default email on first visit
+  useEffect(() => {
+    if (!currentEmail && !localStorage.getItem('visited')) {
+      handleGenerate();
+      localStorage.setItem('visited', 'true');
+    }
+  }, [currentEmail]);
 
-  const generateEmail = async () => {
-    setLoading(true);
-    setError(null);
-    setEmail(''); // Clear any existing email
-    
+  const handleGenerate = async () => {
+    setIsLoading(true);
+    setError('');
+
     try {
-      console.log('Generating email with duration:', duration);
-      
       const response = await fetch('/api', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ expireTime: duration }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expireTime: duration })
       });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data.error);
       
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to generate email');
-      }
-
-      console.log('Email generation response:', data);
-      
-      if (data.success && data.email) {
-        setEmail(data.email);
-        onGenerate(data.email, duration);
-      } else {
-        throw new Error('Invalid response from server');
-      }
-    } catch (error: any) {
-      console.error('Generation error:', error);
-      setError(error.message || 'Failed to generate email');
+      onGenerate(data.email, duration);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate email');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(email);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  const handleCopy = async () => {
+    if (currentEmail) {
+      await navigator.clipboard.writeText(currentEmail);
+      // Show toast notification
     }
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
-      <div className="flex flex-col gap-4">
-        {/* Duration Selector */}
-        <div className="flex items-center gap-3 text-gray-600">
-          <Clock className="w-5 h-5" />
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex-grow">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Temporary Email Address
+          </label>
+          <div className="relative">
+            <input
+              type="text"
+              value={currentEmail || ''}
+              readOnly
+              className="w-full px-4 py-2 border rounded-lg bg-gray-50"
+              placeholder="Your temporary email will appear here"
+            />
+            {currentEmail && (
+              <button
+                onClick={handleCopy}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex gap-2 w-full sm:w-auto">
           <select
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
-            className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={loading}
+            className="px-3 py-2 border rounded-lg bg-white"
           >
-            {durationOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            <option value={10}>10 minutes</option>
+            <option value={20}>20 minutes</option>
+            <option value={30}>30 minutes</option>
           </select>
-        </div>
 
-        {/* Email Generator */}
-        <div className="flex items-center gap-4">
-          <input
-            type="text"
-            readOnly
-            value={email}
-            placeholder="Click generate to create email"
-            className="flex-grow p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-800 font-medium"
-          />
           <button
-            onClick={copyToClipboard}
-            disabled={!email || loading}
-            className={`p-4 rounded-lg transition-all duration-300 ${
-              copied 
-                ? 'bg-green-500 text-white' 
-                : email 
-                  ? 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-            title="Copy to clipboard"
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            <Copy className="w-5 h-5" />
-          </button>
-          <button
-            onClick={generateEmail}
-            disabled={loading}
-            className={`p-4 bg-blue-600 text-white rounded-lg transition-colors ${
-              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
-            }`}
-          >
-            {loading ? 'Generating...' : 'Generate'}
+            {isLoading ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>
-      {copied && (
-        <p className="text-sm text-green-600 mt-2">
-          Copied to clipboard!
-        </p>
-      )}
+
       {error && (
-        <p className="text-sm text-red-600 mt-2">
-          {error}
-        </p>
+        <p className="text-red-500 text-sm mt-2">{error}</p>
       )}
     </div>
   );
