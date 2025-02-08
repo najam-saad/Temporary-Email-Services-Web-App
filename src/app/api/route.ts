@@ -258,8 +258,9 @@ export async function GET(request: Request) {
       .map(msg => ({
         id: msg.id,
         from: msg.sender?.address || msg.from || 'Unknown',
+        to: msg.recipient || msg.to || email,
         subject: msg.subject || '(No Subject)',
-        content: msg.content || '',
+        content: msg.content || msg.text || '',
         receivedAt: msg.created || new Date(msg.date || '').getTime(),
         messageId: msg.messageId,
         url: msg.url
@@ -268,8 +269,14 @@ export async function GET(request: Request) {
 
     // Filter messages for this specific email
     const filteredMessages = messages.filter(msg => 
-      msg.from.toLowerCase() === email.toLowerCase()
+      msg.to.toLowerCase() === email.toLowerCase()
     );
+
+    console.log('Filtered messages:', {
+      total: messages.length,
+      filtered: filteredMessages.length,
+      email: email
+    });
 
     return NextResponse.json({
       messages: filteredMessages,
@@ -278,7 +285,7 @@ export async function GET(request: Request) {
         email,
         messagesCount: messagesResponse.data.messages?.length || 0,
         logsCount: logsResponse.data.logs?.length || 0,
-        combinedCount: messages?.length || 0
+        combinedCount: messages.length
       }
     }, { headers });
 

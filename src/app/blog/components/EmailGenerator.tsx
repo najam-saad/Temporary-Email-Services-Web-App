@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Clock, Copy } from 'lucide-react';
+import { Clock, Copy, Check } from 'lucide-react';
 
 interface EmailGeneratorProps {
   onGenerate: (email: string, duration: number) => void;
@@ -12,6 +12,7 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
   const [duration, setDuration] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   // Generate default email on first visit
   useEffect(() => {
@@ -46,55 +47,63 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
   const handleCopy = async () => {
     if (currentEmail) {
       await navigator.clipboard.writeText(currentEmail);
-      // Show toast notification
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-end">
-        <div className="flex-grow">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Temporary Email Address
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={currentEmail || ''}
-              readOnly
-              className="w-full px-4 py-2 border rounded-lg bg-gray-50"
-              placeholder="Your temporary email will appear here"
-            />
-            {currentEmail && (
-              <button
-                onClick={handleCopy}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
+    <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="flex flex-col gap-4">
+        {/* Duration selector */}
+        <div className="flex items-center gap-2">
+          <Clock className="w-5 h-5 text-gray-400" />
           <select
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
-            className="px-3 py-2 border rounded-lg bg-white"
+            className="px-3 py-2 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value={10}>10 minutes</option>
             <option value={20}>20 minutes</option>
             <option value={30}>30 minutes</option>
           </select>
-
-          <button
-            onClick={handleGenerate}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isLoading ? 'Generating...' : 'Generate'}
-          </button>
         </div>
+
+        {/* Email input and copy button */}
+        <div className="relative">
+          <input
+            type="text"
+            value={currentEmail || ''}
+            readOnly
+            placeholder="Click generate to create email"
+            className="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+          {currentEmail && (
+            <button
+              onClick={handleCopy}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md transition-colors ${
+                copied 
+                  ? 'bg-green-100 text-green-600' 
+                  : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              {copied ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <Copy className="w-5 h-5" />
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Generate button */}
+        <button
+          onClick={handleGenerate}
+          disabled={isLoading}
+          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isLoading ? 'Generating...' : 'Generate'}
+        </button>
       </div>
 
       {error && (
