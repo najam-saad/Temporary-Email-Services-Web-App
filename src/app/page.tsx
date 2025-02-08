@@ -31,7 +31,7 @@ export default function Home() {
             </p>
             {emailAddress && (
               <p className="text-lg text-blue-600 mb-4">
-                Your temporary email: {emailAddress}
+                porary email: {emailAddress}
               </p>
             )}
             <div className="max-w-lg mx-auto mb-8">
