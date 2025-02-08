@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import CountdownTimer from './CountdownTimer';
 import { Mail, RefreshCw } from 'lucide-react';
 
@@ -21,6 +21,7 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const fetchEmails = async () => {
+    if (!email) return;
     try {
       setIsRefreshing(true);
       const response = await fetch(`/api?email=${email}`);
@@ -36,16 +37,14 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
   };
 
   useEffect(() => {
-    if (email) {
-      fetchEmails();
-      const interval = setInterval(fetchEmails, 10000);
-      return () => clearInterval(interval);
-    }
-  }, [email]);
-
-  const handleRefresh = () => {
     fetchEmails();
-  };
+    const interval = setInterval(fetchEmails, 10000);
+    return () => clearInterval(interval);
+  }, [email, fetchEmails]);
+
+  const handleRefresh = useCallback(() => {
+    fetchEmails();
+  }, [fetchEmails]);
 
   return (
     <div className="bg-white rounded-xl shadow-lg mt-8">

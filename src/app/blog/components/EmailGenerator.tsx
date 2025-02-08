@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Copy, Clock } from 'lucide-react';
-import axios from 'axios';
 
 interface EmailGeneratorProps {
   onGenerate: (email: string, duration: number) => void;

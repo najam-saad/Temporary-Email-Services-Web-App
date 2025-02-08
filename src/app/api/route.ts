@@ -2,6 +2,16 @@ import { NextResponse } from 'next/server';
 import axios from 'axios';
 import { emailStore } from '@/utils/email';
 
+// Add this interface at the top of the file
+interface ImprovMXEmail {
+  id: string;
+  from: string;
+  subject: string;
+  html?: string;
+  text?: string;
+  date: string;
+}
+
 if (!process.env.IMPROVMX_API_KEY) {
   throw new Error('IMPROVMX_API_KEY is not defined in environment variables');
 }
@@ -92,11 +102,11 @@ export async function GET(request: Request) {
 
     // Store emails in our local store
     if (response.data.emails) {
-      emailStore[email].messages = response.data.emails.map((email: any) => ({
+      emailStore[email].messages = response.data.emails.map((email: ImprovMXEmail) => ({
         id: email.id,
         from: email.from,
         subject: email.subject,
-        content: email.html || email.text,
+        content: email.html || email.text || '',
         receivedAt: new Date(email.date).getTime()
       }));
     }
