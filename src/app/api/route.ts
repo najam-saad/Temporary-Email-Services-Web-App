@@ -30,7 +30,7 @@ const DOMAIN = process.env.DOMAIN || 'tempfreeemail.com';
 const API_KEY = process.env.IMPROVMX_API_KEY || '';
 const EMAIL_USER = process.env.EMAIL_USER || '';
 
-// Fix the authorization header format
+// Fix authorization header
 const authHeader = Buffer.from(`api:${API_KEY}`).toString('base64');
 
 interface ImprovMXResponse {
@@ -39,80 +39,68 @@ interface ImprovMXResponse {
 
 export async function POST(request: Request) {
   console.log('Starting email generation...');
-  console.log('Config:', { DOMAIN, EMAIL_USER: EMAIL_USER ? 'set' : 'not set', API_KEY: API_KEY ? 'set' : 'not set' });
-
-  if (!API_KEY || !EMAIL_USER) {
-    console.error('Missing configuration:', { hasApiKey: !!API_KEY, hasEmailUser: !!EMAIL_USER });
+  
+  // Verify configuration
+  if (!API_KEY || !EMAIL_USER || !DOMAIN) {
+    console.error('Missing configuration:', {
+      hasApiKey: !!API_KEY,
+      hasEmailUser: !!EMAIL_USER,
+      hasDomain: !!DOMAIN
+    });
     return NextResponse.json(
-      { error: "Missing API key or email configuration" },
+      { error: "Missing configuration" },
       { status: 500 }
     );
   }
 
   try {
-    const body = await request.json();
-    const { email, expireTime } = body;
-    
-    console.log('Received request:', { email, expireTime });
-    
-    if (!email || !expireTime) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+    // Generate random email
+    const randomString = Math.random().toString(36).substring(2, 8);
+    const email = `${randomString}@${DOMAIN}`;
+    const { expireTime } = await request.json();
 
-    try {
-      console.log('Setting up ImprovMX forwarding...');
-      const alias = email.split('@')[0];
-      
-      const improvmxResponse = await axios.post(
-        `https://api.improvmx.com/v3/domains/${DOMAIN}/aliases`,
-        {
-          alias,
-          forward: EMAIL_USER
-        },
-        {
-          headers: {
-            'Authorization': `Basic ${authHeader}`,
-            'Content-Type': 'application/json'
-          },
+    console.log('Creating alias:', {
+      email,
+      expireTime,
+      forward: EMAIL_USER
+    });
+
+    // Create alias in ImprovMX
+    const improvmxResponse = await axios.post(
+      `https://api.improvmx.com/v3/domains/${DOMAIN}/aliases`,
+      {
+        alias: email.split('@')[0],
+        forward: EMAIL_USER
+      },
+      {
+        headers: {
+          'Authorization': `Basic ${authHeader}`,
+          'Content-Type': 'application/json'
         }
-      );
+      }
+    );
 
-      console.log('ImprovMX response:', improvmxResponse.data);
+    console.log('ImprovMX response:', improvmxResponse.data);
 
-      // Store in memory
-      const expiration = Date.now() + (expireTime * 60 * 1000);
-      emailStore[email] = { messages: [], expiresAt: expiration };
+    // Store in memory
+    const expiration = Date.now() + (expireTime * 60 * 1000);
+    emailStore[email] = { messages: [], expiresAt: expiration };
 
-      return NextResponse.json({
-        email,
-        expiresAt: expiration,
-        success: true
-      });
-    } catch (error: any) {
-      console.error('ImprovMX Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
-      // Return a more user-friendly error
-      const errorMessage = error.response?.status === 401 
-        ? "Email service authentication failed" 
-        : "Failed to set up email forwarding";
-        
-      return NextResponse.json(
-        { error: errorMessage },
-        { status: error.response?.status || 500 }
-      );
-    }
-  } catch (error) {
-    console.error('API Error:', error);
+    return NextResponse.json({
+      email,
+      expiresAt: expiration,
+      success: true
+    });
+  } catch (error: any) {
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error.response?.data?.error || "Failed to create email" },
+      { status: error.response?.status || 500 }
     );
   }
 }
