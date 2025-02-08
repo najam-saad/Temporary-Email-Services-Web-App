@@ -26,22 +26,36 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
     setError(null);
     
     try {
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const domains = ['ahaks.com', 'tempmail.org', 'disposable.com'];
-      const randomDomain = domains[Math.floor(Math.random() * domains.length)];
-      const newEmail = `${randomString}@${randomDomain}`;
+      console.log('Generating email with duration:', duration);
       
-      // Create temporary email through API
-      await axios.post('/api/create-temp-email', {
-        email: newEmail,
-        expireTime: duration
+      // Generate a random email locally first
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const tempEmail = `${randomString}@tempmail.org`; // or your domain
+
+      const response = await fetch('/api', { // Changed from '/api/send' to '/api'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: tempEmail,
+          expireTime: duration
+        })
       });
 
-      setEmail(newEmail);
-      onGenerate(newEmail, duration);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to generate email');
+      }
+
+      const data = await response.json();
+      console.log('Response data:', data); // Debug log
+      setEmail(tempEmail);
+      onGenerate(tempEmail, duration);
     } catch (err) {
+      console.error('Generation error:', err);
       setError('Failed to generate email. Please try again.');
-      console.error('Error generating email:', err);
     } finally {
       setIsLoading(false);
     }

@@ -3,17 +3,24 @@
 import { useState } from "react";
 
 import EmailGenerator from "./blog/components/EmailGenerator";
+import EmailInbox from "./blog/components/EmailInbox";
 import Header from "./blog/components/Header";
 import Footer from "./blog/components/Footer";
 import Image from "next/image";
 
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>("");
+  const [expiryTime, setExpiryTime] = useState<number>(0);
 
-  const handleEmailGenerate = (newEmail: string) => {
+  const handleEmailGenerate = (newEmail: string, duration: number) => {
+    console.log('Email generated:', newEmail);
     setEmailAddress(newEmail);
-    // You can add functionality here to use the email address
-    console.log('Generated email:', newEmail);
+    setExpiryTime(Date.now() + duration * 60 * 1000);
+  };
+
+  const handleExpire = () => {
+    setEmailAddress("");
+    setExpiryTime(0);
   };
 
   return (
@@ -27,11 +34,11 @@ export default function Home() {
               Temp-emails
             </h1>
             <p className="text-xl text-gray-700 mb-6">
-               email that expires in minutes
+              Email that expires in minutes
             </p>
             {emailAddress && (
               <p className="text-lg text-blue-600 mb-4">
-                porary email: {emailAddress}
+                Your temporary email: {emailAddress}
               </p>
             )}
             <div className="max-w-lg mx-auto mb-8">
@@ -47,6 +54,13 @@ export default function Home() {
 
           <div className="max-w-2xl mx-auto">
             <EmailGenerator onGenerate={handleEmailGenerate} />
+            {emailAddress && expiryTime > 0 && (
+              <EmailInbox
+                email={emailAddress}
+                expiryTime={expiryTime}
+                onExpire={handleExpire}
+              />
+            )}
           </div>
         </div>
       </main>

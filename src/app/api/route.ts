@@ -7,13 +7,14 @@ if (!process.env.IMPROVMX_API_KEY) {
 }
 
 const API_KEY = process.env.IMPROVMX_API_KEY;
+const DOMAIN = 'tempmail.org'; // Replace with your actual domain
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, expireTime } = body;
     
-    console.log('Received request:', { email, expireTime }); // Debug log
+    console.log('Received request:', { email, expireTime });
     
     if (!email || !expireTime) {
       return NextResponse.json(
@@ -25,23 +26,26 @@ export async function POST(request: Request) {
     const expiration = Date.now() + expireTime * 60000;
     emailStore[email] = { messages: [], expiresAt: expiration };
 
-    // Verify ImprovMX setup
+    // Set up email forwarding with ImprovMX
     try {
-      await axios.get(`https://api.improvmx.com/v3/domains`, {
-        headers: {
-          Authorization: `Basic ${Buffer.from(API_KEY).toString('base64')}`,
+      await axios.post(
+        `https://api.improvmx.com/v3/domains/${DOMAIN}/aliases`,
+        {
+          alias: email.split('@')[0],
+          forward: process.env.EMAIL_USER
         },
-      });
-    } catch (error) {
-      console.error('ImprovMX Error:', error);
-      return NextResponse.json(
-        { error: "Email service configuration error" },
-        { status: 500 }
+        {
+          headers: {
+            'Authorization': `Basic ${Buffer.from(API_KEY).toString('base64')}`,
+          },
+        }
       );
+    } catch (error) {
+      console.error('Failed to set up email forwarding:', error);
     }
 
     return NextResponse.json({ 
-      email, 
+      email,
       expiresAt: expiration,
       success: true 
     });
@@ -66,14 +70,42 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await axios.get(`https://api.improvmx.com/v3/emails/${email}`, {
-      headers: {
-        Authorization: `Basic ${Buffer.from(API_KEY).toString('base64')}`,
-      },
+    // Check emailStore first
+    if (emailStore[email]) {
+      return NextResponse.json({
+        messages: emailStore[email].messages
+      });
+    }
+
+    // Then check ImprovMX
+    const response = await axios.get(
+      `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
+      {
+        headers: {
+          Authorization: `Basic ${Buffer.from(API_KEY).toString('base64')}`,
+        },
+        params: {
+          to: email
+        }
+      }
+    );
+
+    // Store emails in our local store
+    if (response.data.emails) {
+      emailStore[email].messages = response.data.emails.map((email: any) => ({
+        id: email.id,
+        from: email.from,
+        subject: email.subject,
+        content: email.html || email.text,
+        receivedAt: new Date(email.date).getTime()
+      }));
+    }
+
+    return NextResponse.json({
+      messages: emailStore[email].messages
     });
-    return NextResponse.json(response.data);
   } catch (error) {
-    console.error("Error fetching emails: ", error);
+    console.error("Error fetching emails:", error);
     return NextResponse.json(
       { error: "Failed to fetch emails" },
       { status: 500 }
