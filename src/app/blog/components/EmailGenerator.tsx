@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Copy, Clock } from 'lucide-react';
+import { Clock, Copy } from 'lucide-react';
 
 interface EmailGeneratorProps {
   onGenerate: (email: string, duration: number) => void;
@@ -29,7 +29,7 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
       
       // Generate a random email locally first
       const randomString = Math.random().toString(36).substring(2, 8);
-      const tempEmail = `${randomString}@tempmail.org`; // or your domain
+      const tempEmail = `${randomString}@tempfreeemail.com`; // Use the correct domain
 
       const response = await fetch('/api', { // Changed from '/api/send' to '/api'
         method: 'POST',

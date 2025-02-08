@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import CountdownTimer from './CountdownTimer';
 import { Mail, RefreshCw } from 'lucide-react';
 
@@ -19,28 +19,40 @@ interface EmailInboxProps {
 export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxProps) {
   const [messages, setMessages] = useState<Email[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout>();
 
-  const fetchEmails = async () => {
+  const fetchEmails = useCallback(async () => {
     if (!email) return;
     try {
       setIsRefreshing(true);
+      setError(null);
       const response = await fetch(`/api?email=${email}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch emails');
+      }
       const data = await response.json();
       if (data.messages) {
         setMessages(data.messages);
       }
     } catch (error) {
       console.error('Failed to fetch emails:', error);
+      setError('Failed to fetch emails. Please try refreshing.');
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [email]);
 
   useEffect(() => {
     fetchEmails();
-    const interval = setInterval(fetchEmails, 10000);
-    return () => clearInterval(interval);
-  }, [email, fetchEmails]);
+    intervalRef.current = setInterval(fetchEmails, 10000);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchEmails]);
 
   const handleRefresh = useCallback(() => {
     fetchEmails();
