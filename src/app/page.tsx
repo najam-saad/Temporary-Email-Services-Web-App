@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import EmailGenerator from "./blog/components/EmailGenerator";
@@ -10,17 +10,42 @@ import Footer from "./blog/components/Footer";
 import Image from "next/image";
 
 export default function Home() {
-  const [emailAddress, setEmailAddress] = useState<string>("");
-  const [expiryTime, setExpiryTime] = useState<number>(0);
+  const [email, setEmail] = useState<string>('');
+  const [expiresAt, setExpiresAt] = useState<number>(0);
 
-  const handleEmailGenerate = useCallback((newEmail: string, duration: number) => {
-    setEmailAddress(newEmail);
-    setExpiryTime(Date.now() + duration * 60 * 1000);
+  // Load saved email on initial render
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('temp_email');
+    const savedExpiry = localStorage.getItem('temp_email_expiry');
+    
+    if (savedEmail && savedExpiry) {
+      const expiryTime = parseInt(savedExpiry);
+      if (expiryTime > Date.now()) {
+        setEmail(savedEmail);
+        setExpiresAt(expiryTime);
+      } else {
+        // Clear expired email
+        localStorage.removeItem('temp_email');
+        localStorage.removeItem('temp_email_expiry');
+      }
+    }
+  }, []);
+
+  const handleGenerate = useCallback((newEmail: string, duration: number) => {
+    setEmail(newEmail);
+    const expiry = Date.now() + (duration * 60 * 1000);
+    setExpiresAt(expiry);
+    
+    // Save to localStorage
+    localStorage.setItem('temp_email', newEmail);
+    localStorage.setItem('temp_email_expiry', expiry.toString());
   }, []);
 
   const handleExpire = useCallback(() => {
-    setEmailAddress("");
-    setExpiryTime(0);
+    setEmail('');
+    setExpiresAt(0);
+    localStorage.removeItem('temp_email');
+    localStorage.removeItem('temp_email_expiry');
   }, []);
 
   return (
@@ -55,13 +80,15 @@ export default function Home() {
 
             <div className="max-w-2xl mx-auto">
               <ErrorBoundary>
-                <EmailGenerator onGenerate={handleEmailGenerate} />
-                {emailAddress && expiryTime > 0 && (
+                <EmailGenerator 
+                  onGenerate={handleGenerate} 
+                  currentEmail={email}
+                />
+                {email && (
                   <ErrorBoundary>
-                    <EmailInbox
-                      key={emailAddress}
-                      email={emailAddress}
-                      expiresAt={expiryTime}
+                    <EmailInbox 
+                      email={email} 
+                      expiresAt={expiresAt}
                       onExpire={handleExpire}
                     />
                   </ErrorBoundary>

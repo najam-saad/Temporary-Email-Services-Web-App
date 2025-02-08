@@ -11,159 +11,92 @@ interface EmailMessage {
   subject: string;
   content: string;
   receivedAt: number;
-  url?: string;
 }
 
 interface EmailInboxProps {
   email: string;
   expiresAt: number;
-  onExpire?: () => void;
+  onExpire: () => void;
 }
 
 export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxProps) {
   const [messages, setMessages] = useState<EmailMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastCheck, setLastCheck] = useState<Date | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date>(new Date());
+  const [error, setError] = useState('');
 
-  const checkInbox = useCallback(async () => {
-    if (!email) {
-      console.warn('No email provided to EmailInbox');
-      return;
-    }
-
+  const fetchMessages = useCallback(async () => {
+    if (!email) return;
+    
+    setIsLoading(true);
+    setError('');
+    
     try {
-      setLoading(true);
-      console.log('Checking inbox for:', email);
-
-      const response = await axios.get('/api', {
-        params: { email }
-      });
-
-      // Ensure we have a valid response
-      if (!response.data) {
-        throw new Error('Invalid response from server');
-      }
-
-      // Ensure messages is always an array
-      const receivedMessages = Array.isArray(response.data.messages) 
-        ? response.data.messages 
-        : [];
-
-      console.log('Received messages:', {
-        count: receivedMessages.length,
-        messages: receivedMessages
-      });
-
-      setMessages(receivedMessages);
-      setLastCheck(new Date());
-      setError(null);
-    } catch (error: any) {
-      console.error('Inbox check failed:', {
-        error,
-        email,
-        message: error.message,
-        response: error.response?.data
-      });
-      setError(error.message || 'Failed to check inbox');
+      const response = await axios.get(`/api?email=${email}`);
+      const sortedMessages = response.data.messages.sort(
+        (a: EmailMessage, b: EmailMessage) => b.receivedAt - a.receivedAt
+      );
+      setMessages(sortedMessages);
+      setLastChecked(new Date());
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to fetch messages');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   }, [email]);
 
+  // Initial fetch and periodic refresh
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    let mounted = true;
-
-    const startChecking = async () => {
-      if (mounted) await checkInbox();
-
-      interval = setInterval(() => {
-        if (!mounted) return;
-        
-        const now = Date.now();
-        if (now < expiresAt) {
-          checkInbox();
-        } else {
-          clearInterval(interval);
-          onExpire?.();
-        }
-      }, 10000);
-    };
-
-    startChecking();
-
-    return () => {
-      mounted = false;
-      if (interval) clearInterval(interval);
-    };
-  }, [email, expiresAt, onExpire, checkInbox]);
-
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    });
-  };
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 text-red-700 rounded-lg">
-        <h3 className="font-bold">Error checking inbox</h3>
-        <p>{error}</p>
-        <button 
-          onClick={checkInbox}
-          className="mt-2 px-4 py-2 bg-red-100 hover:bg-red-200 rounded"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
+    fetchMessages();
+    const interval = setInterval(fetchMessages, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, [fetchMessages]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Inbox for {email}</h2>
-        {lastCheck && (
+    <div className="mt-8 bg-white rounded-lg shadow p-6">
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-lg font-semibold">Inbox for {email}</h2>
           <p className="text-sm text-gray-500">
-            Last checked: {lastCheck.toLocaleTimeString()}
+            Last checked: {lastChecked.toLocaleTimeString()}
           </p>
-        )}
+        </div>
+        <div className="flex items-center gap-4">
+          <CountdownTimer expiryTime={expiresAt} onExpire={onExpire} />
+          <button
+            onClick={fetchMessages}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {loading ? (
-        <div className="p-4 text-center">Loading messages...</div>
-      ) : messages.length === 0 ? (
-        <div className="p-4 text-center text-gray-500">
+      {error && (
+        <p className="text-red-500 mb-4">{error}</p>
+      )}
+
+      {messages.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
           No messages yet. They will appear here automatically.
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {messages.map((message) => (
-            <div key={message.id} className="p-4 border rounded-lg">
-              <div className="flex justify-between">
-                <span className="font-medium">{message.from}</span>
-                <span className="text-sm text-gray-500">
-                  {new Date(message.receivedAt).toLocaleString()}
-                </span>
+            <div key={message.id} className="border rounded-lg p-4 hover:bg-gray-50">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-medium">{message.from || 'Unknown'}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(message.receivedAt).toLocaleString()}
+                  </p>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold">{message.subject}</h3>
+              <p className="font-medium">{message.subject || '(No subject)'}</p>
               {message.content && (
-                <div className="mt-2 text-gray-700">{message.content}</div>
-              )}
-              {message.url && (
-                <a 
-                  href={message.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 text-blue-600 hover:underline"
-                >
-                  View full message
-                </a>
+                <div className="mt-2 text-gray-600">{message.content}</div>
               )}
             </div>
           ))}

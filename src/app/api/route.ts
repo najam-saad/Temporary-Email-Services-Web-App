@@ -169,6 +169,13 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const email = searchParams.get('email');
+
+  if (!email) {
+    return NextResponse.json({ error: 'Email parameter is required' }, { status: 400 });
+  }
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -176,18 +183,6 @@ export async function GET(request: Request) {
   };
 
   try {
-    const url = new URL(request.url);
-    const email = url.searchParams.get('email');
-
-    // Handle root endpoint
-    if (!email) {
-      return NextResponse.json({ 
-        status: 'ok',
-        messages: [],
-        count: 0
-      }, { headers });
-    }
-
     console.log('Fetching emails for:', email);
     console.log('Using ImprovMX API Key:', API_KEY ? 'Present' : 'Missing');
     console.log('Domain:', DOMAIN);
@@ -271,9 +266,14 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => b.receivedAt - a.receivedAt);
 
+    // Filter messages for this specific email
+    const filteredMessages = messages.filter(msg => 
+      msg.from.toLowerCase() === email.toLowerCase()
+    );
+
     return NextResponse.json({
-      messages: messages || [], // Ensure we always return an array
-      count: messages?.length || 0,
+      messages: filteredMessages,
+      count: filteredMessages.length,
       debug: {
         email,
         messagesCount: messagesResponse.data.messages?.length || 0,
