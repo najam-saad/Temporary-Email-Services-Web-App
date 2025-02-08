@@ -27,23 +27,37 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
     try {
       setIsRefreshing(true);
       setError(null);
+      
       const response = await fetch(`/api?email=${email}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch emails');
-      }
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch emails');
+      }
+
+      if (data.expired) {
+        onExpire();
+        return;
+      }
+
+      if (data.warning) {
+        setError(data.warning);
+      }
+
       if (data.messages) {
         setMessages(data.messages);
       }
     } catch (error) {
       console.error('Failed to fetch emails:', error);
-      setError('Failed to fetch emails. Please try refreshing.');
+      setError(error instanceof Error ? error.message : 'Failed to fetch emails');
     } finally {
       setIsRefreshing(false);
     }
-  }, [email]);
+  }, [email, onExpire]);
 
   useEffect(() => {
+    if (!email) return;
+    
     fetchEmails();
     intervalRef.current = setInterval(fetchEmails, 10000);
     
@@ -52,11 +66,17 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
         clearInterval(intervalRef.current);
       }
     };
-  }, [fetchEmails]);
+  }, [fetchEmails, email]);
 
-  const handleRefresh = useCallback(() => {
-    fetchEmails();
-  }, [fetchEmails]);
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    });
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-lg mt-8">
@@ -65,7 +85,7 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
         <div className="flex items-center gap-3">
           <CountdownTimer expiryTime={expiryTime} onExpire={onExpire} />
           <button
-            onClick={handleRefresh}
+            onClick={() => fetchEmails()}
             disabled={isRefreshing}
             className={`p-2 rounded-full hover:bg-gray-100 transition-all ${
               isRefreshing ? 'animate-spin' : ''
@@ -76,6 +96,12 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="p-4 bg-yellow-50 border-b border-yellow-100">
+          <p className="text-yellow-800">{error}</p>
+        </div>
+      )}
 
       <div className="p-8">
         {messages.length === 0 ? (
@@ -96,7 +122,7 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
                     <p className="text-sm text-gray-600 mt-1">From: {msg.from}</p>
                   </div>
                   <span className="text-sm text-gray-500">
-                    {new Date(msg.receivedAt).toLocaleTimeString()}
+                    {formatTime(msg.receivedAt)}
                   </span>
                 </div>
                 <div

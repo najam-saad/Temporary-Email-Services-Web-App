@@ -13,14 +13,8 @@ export default function Home() {
   const [expiryTime, setExpiryTime] = useState<number>(0);
 
   const handleEmailGenerate = (newEmail: string, duration: number) => {
-    console.log('Email generated:', newEmail);
     setEmailAddress(newEmail);
     setExpiryTime(Date.now() + duration * 60 * 1000);
-  };
-
-  const handleExpire = () => {
-    setEmailAddress("");
-    setExpiryTime(0);
   };
 
   return (
@@ -36,11 +30,6 @@ export default function Home() {
             <p className="text-xl text-gray-700 mb-6">
               Email that expires in minutes
             </p>
-            {emailAddress && (
-              <p className="text-lg text-blue-600 mb-4">
-                Your temporary email: {emailAddress}
-              </p>
-            )}
             <div className="max-w-lg mx-auto mb-8">
               <Image
                 src="/hero-mail.svg"
@@ -48,6 +37,11 @@ export default function Home() {
                 width={400}
                 height={300}
                 className="mx-auto"
+                priority
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto'
+                }}
               />
             </div>
           </div>
@@ -56,9 +50,13 @@ export default function Home() {
             <EmailGenerator onGenerate={handleEmailGenerate} />
             {emailAddress && expiryTime > 0 && (
               <EmailInbox
+                key={emailAddress}
                 email={emailAddress}
                 expiryTime={expiryTime}
-                onExpire={handleExpire}
+                onExpire={() => {
+                  setEmailAddress("");
+                  setExpiryTime(0);
+                }}
               />
             )}
           </div>

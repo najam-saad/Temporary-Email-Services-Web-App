@@ -27,11 +27,12 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
     try {
       console.log('Generating email with duration:', duration);
       
-      // Generate a random email locally first
       const randomString = Math.random().toString(36).substring(2, 8);
-      const tempEmail = `${randomString}@tempfreeemail.com`; // Use the correct domain
+      const tempEmail = `${randomString}@tempfreeemail.com`;
 
-      const response = await fetch('/api', { // Changed from '/api/send' to '/api'
+      console.log('Requesting email generation:', tempEmail);
+
+      const response = await fetch('/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -42,19 +43,19 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
         })
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('API Error:', errorData);
-        throw new Error(errorData.error || 'Failed to generate email');
+        console.error('API Error Response:', data);
+        throw new Error(data.error || 'Failed to generate email');
       }
 
-      const data = await response.json();
-      console.log('Response data:', data); // Debug log
+      console.log('Email generated successfully:', data);
       setEmail(tempEmail);
       onGenerate(tempEmail, duration);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Generation error:', err);
-      setError('Failed to generate email. Please try again.');
+      setError(err.message || 'Failed to generate email. Please try again.');
     } finally {
       setIsLoading(false);
     }

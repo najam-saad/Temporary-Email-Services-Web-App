@@ -30,17 +30,21 @@ const DOMAIN = process.env.DOMAIN || 'tempfreeemail.com';
 const API_KEY = process.env.IMPROVMX_API_KEY || '';
 const EMAIL_USER = process.env.EMAIL_USER || '';
 
-// Create base64 authorization header once
-const authHeader = `Basic ${Buffer.from(API_KEY).toString('base64')}`;
+// Fix the authorization header format
+const authHeader = Buffer.from(`api:${API_KEY}`).toString('base64');
 
 interface ImprovMXResponse {
   emails: ImprovMXEmail[];
 }
 
 export async function POST(request: Request) {
+  console.log('Starting email generation...');
+  console.log('Config:', { DOMAIN, EMAIL_USER: EMAIL_USER ? 'set' : 'not set', API_KEY: API_KEY ? 'set' : 'not set' });
+
   if (!API_KEY || !EMAIL_USER) {
+    console.error('Missing configuration:', { hasApiKey: !!API_KEY, hasEmailUser: !!EMAIL_USER });
     return NextResponse.json(
-      { error: "Missing configuration" },
+      { error: "Missing API key or email configuration" },
       { status: 500 }
     );
   }
@@ -49,6 +53,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, expireTime } = body;
     
+    console.log('Received request:', { email, expireTime });
+    
     if (!email || !expireTime) {
       return NextResponse.json(
         { error: "Missing required fields" },
@@ -56,21 +62,25 @@ export async function POST(request: Request) {
       );
     }
 
-    // Set up email forwarding
     try {
-      await axios.post(
+      console.log('Setting up ImprovMX forwarding...');
+      const alias = email.split('@')[0];
+      
+      const improvmxResponse = await axios.post(
         `https://api.improvmx.com/v3/domains/${DOMAIN}/aliases`,
         {
-          alias: email.split('@')[0],
+          alias,
           forward: EMAIL_USER
         },
         {
           headers: {
-            'Authorization': authHeader,
+            'Authorization': `Basic ${authHeader}`,
             'Content-Type': 'application/json'
           },
         }
       );
+
+      console.log('ImprovMX response:', improvmxResponse.data);
 
       // Store in memory
       const expiration = Date.now() + (expireTime * 60 * 1000);
@@ -82,10 +92,20 @@ export async function POST(request: Request) {
         success: true
       });
     } catch (error: any) {
-      console.error('ImprovMX Error:', error.response?.data || error);
+      console.error('ImprovMX Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Return a more user-friendly error
+      const errorMessage = error.response?.status === 401 
+        ? "Email service authentication failed" 
+        : "Failed to set up email forwarding";
+        
       return NextResponse.json(
-        { error: "Failed to set up email forwarding" },
-        { status: 500 }
+        { error: errorMessage },
+        { status: error.response?.status || 500 }
       );
     }
   } catch (error) {
@@ -98,7 +118,10 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  console.log('GET request received');
+  
   if (!API_KEY) {
+    console.error('API key missing');
     return NextResponse.json(
       { error: "API key not configured" },
       { status: 500 }
@@ -116,38 +139,64 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Initialize store if needed
     if (!emailStore[email]) {
       emailStore[email] = {
         messages: [],
-        expiresAt: Date.now() + (60 * 60 * 1000) // 1 hour
+        expiresAt: Date.now() + (60 * 60 * 1000)
       };
     }
 
-    const response = await axios.get<ImprovMXResponse>(
-      `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
-      {
-        headers: {
-          'Authorization': authHeader,
-        },
-        params: { to: email }
-      }
-    );
-
-    if (response.data.emails) {
-      const messages: EmailMessage[] = response.data.emails.map((mail) => ({
-        id: mail.id,
-        from: mail.from,
-        subject: mail.subject,
-        content: mail.html || mail.text || '',
-        receivedAt: new Date(mail.date).getTime()
-      }));
-      
-      emailStore[email].messages = messages;
+    // Check if email has expired
+    if (emailStore[email].expiresAt < Date.now()) {
+      return NextResponse.json({
+        messages: [],
+        expired: true
+      });
     }
 
-    return NextResponse.json({
-      messages: emailStore[email].messages
-    });
+    try {
+      const response = await axios.get<ImprovMXResponse>(
+        `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
+        {
+          headers: {
+            'Authorization': `Basic ${authHeader}`,
+            'Content-Type': 'application/json'
+          },
+          params: { to: email }
+        }
+      );
+
+      console.log('ImprovMX response:', response.data);
+
+      if (response.data.emails) {
+        const messages: EmailMessage[] = response.data.emails.map((mail) => ({
+          id: mail.id,
+          from: mail.from,
+          subject: mail.subject,
+          content: mail.html || mail.text || '',
+          receivedAt: new Date(mail.date).getTime()
+        }));
+        
+        emailStore[email].messages = messages;
+      }
+
+      return NextResponse.json({
+        messages: emailStore[email].messages
+      });
+    } catch (error: any) {
+      console.error('ImprovMX Error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Return stored messages if ImprovMX fails
+      return NextResponse.json({
+        messages: emailStore[email].messages,
+        warning: "Could not fetch new messages"
+      });
+    }
   } catch (error) {
     console.error("Error fetching emails:", error);
     return NextResponse.json(
