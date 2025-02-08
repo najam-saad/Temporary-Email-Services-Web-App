@@ -6,6 +6,8 @@ if (!process.env.IMPROVMX_API_KEY) {
   throw new Error('IMPROVMX_API_KEY is not defined in environment variables');
 }
 
+const API_KEY = process.env.IMPROVMX_API_KEY;
+
 export async function POST(request: Request) {
   const body = await request.json();
   const { email, expireTime } = body;
@@ -29,10 +31,9 @@ export async function GET(request: Request) {
   }
 
   try {
-    const apiKey = process.env.IMPROVMX_API_KEY;
     const response = await axios.get(`https://api.improvmx.com/v3/emails/${email}`, {
       headers: {
-        Authorization: `Basic ${Buffer.from(apiKey).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(API_KEY).toString('base64')}`,
       },
     });
     return NextResponse.json(response.data);
