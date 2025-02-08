@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import axios from 'axios';
-import { emailStore, transporter } from '@/utils/email';
+import { emailStore } from '@/utils/email';
 
 if (!process.env.IMPROVMX_API_KEY) {
   throw new Error('IMPROVMX_API_KEY is not defined in environment variables');
