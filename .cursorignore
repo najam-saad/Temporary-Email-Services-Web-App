@@ -1,0 +1,8 @@
+node_modules/  
+.cache/  
+dist/  
+build/  
+out/  
+.next/  
+.nuxt/  
+.cursor/  

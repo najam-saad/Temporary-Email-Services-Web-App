@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { Mail, RefreshCw, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Mail, RefreshCw, Search, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
 
 interface EmailMessage {
@@ -29,6 +29,7 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [copied, setCopied] = useState(false);
 
   const fetchMessages = useCallback(async () => {
     if (!email) return;
@@ -75,21 +76,39 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
     currentPage * MESSAGES_PER_PAGE
   );
 
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
-    <div className="mt-8 bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-lg font-semibold">Inbox for {email}</h2>
-          <p className="text-sm text-gray-500">
+    <div className="mt-8 bg-white rounded-lg shadow p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="w-full sm:w-auto">
+          <h2 className="text-lg font-semibold">Inbox for</h2>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-gray-600 break-all">{email}</p>
+            <button
+              onClick={() => handleCopy(email)}
+              className={`p-1.5 rounded-md transition-colors ${
+                copied ? 'bg-green-100 text-green-600' : 'hover:bg-gray-100 text-gray-400'
+              }`}
+            >
+              {copied ? <Check size={16} /> : <Copy size={16} />}
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mt-1">
             Last checked: {lastChecked.toLocaleTimeString()}
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        
+        <div className="flex items-center gap-4 w-full sm:w-auto">
           <CountdownTimer expiryTime={expiresAt} onExpire={onExpire} />
           <button
             onClick={fetchMessages}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 active:bg-blue-200 transition-colors w-full sm:w-auto justify-center"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
@@ -104,7 +123,7 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
             placeholder="Search messages..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border rounded-lg"
+            className="w-full pl-10 pr-4 py-3 border rounded-lg text-base"
           />
           <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
         </div>

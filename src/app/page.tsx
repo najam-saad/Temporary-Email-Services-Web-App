@@ -8,6 +8,7 @@ import EmailInbox from "./blog/components/EmailInbox";
 import Header from "./blog/components/Header";
 import Footer from "./blog/components/Footer";
 import Image from "next/image";
+import Advertisement from '@/components/Advertisement';
 
 export default function Home() {
   const [email, setEmail] = useState<string>('');
@@ -54,21 +55,24 @@ export default function Home() {
         <Header />
         
         <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100">
-          <div className="max-w-4xl mx-auto px-4 py-12">
-            <div className="text-center mb-12">
-              <h1 className="text-5xl font-extrabold text-gray-900 mb-3">
+          <div className="max-w-4xl mx-auto px-4 py-6 sm:py-12">
+            {/* Top Ad */}
+            <Advertisement slot="1234567890" format="horizontal" />
+            
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-3">
                 Temp-emails
               </h1>
-              <p className="text-xl text-gray-700 mb-6">
+              <p className="text-lg sm:text-xl text-gray-700 mb-4 sm:mb-6">
                 Email that expires in minutes
               </p>
-              <div className="max-w-lg mx-auto mb-8">
+              <div className="max-w-lg mx-auto mb-6 sm:mb-8">
                 <Image
                   src="/hero-mail.svg"
                   alt="Secure Email"
                   width={400}
                   height={300}
-                  className="mx-auto"
+                  className="mx-auto w-3/4 sm:w-full"
                   priority
                   style={{
                     maxWidth: '100%',
@@ -78,12 +82,16 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-2xl mx-auto space-y-6">
               <ErrorBoundary>
                 <EmailGenerator 
                   onGenerate={handleGenerate} 
                   currentEmail={email}
                 />
+                
+                {/* Middle Ad */}
+                <Advertisement slot="0987654321" format="rectangle" />
+                
                 {email && (
                   <ErrorBoundary>
                     <EmailInbox 
@@ -95,6 +103,9 @@ export default function Home() {
                 )}
               </ErrorBoundary>
             </div>
+            
+            {/* Bottom Ad */}
+            <Advertisement slot="1357924680" format="horizontal" />
           </div>
         </main>
 

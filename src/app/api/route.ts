@@ -62,32 +62,31 @@ interface APIResponse<T> {
   error?: any;
 }
 
+interface ImprovMXMessage {
+  id: string;
+  sender?: {
+    address: string;
+  };
+  recipient?: {
+    address: string;
+  } | string;
+  from?: string;
+  to?: string;
+  subject?: string;
+  content?: string;
+  text?: string;
+  date?: string;
+  created?: number;
+  messageId?: string;
+  url?: string;
+}
+
 interface MessagesResponse {
-  messages: Array<{
-    id: string;
-    from?: string;
-    sender?: { address: string };
-    subject?: string;
-    content?: string;
-    created?: number;
-    date?: string;
-    messageId?: string;
-    url?: string;
-  }>;
+  messages: ImprovMXMessage[];
 }
 
 interface LogsResponse {
-  logs: Array<{
-    id: string;
-    from?: string;
-    sender?: { address: string };
-    subject?: string;
-    content?: string;
-    created?: number;
-    date?: string;
-    messageId?: string;
-    url?: string;
-  }>;
+  logs: ImprovMXMessage[];
 }
 
 export async function POST(request: Request) {
@@ -184,17 +183,6 @@ export async function GET(request: Request) {
 
   try {
     console.log('Fetching emails for:', email);
-    console.log('Using ImprovMX API Key:', API_KEY ? 'Present' : 'Missing');
-    console.log('Domain:', DOMAIN);
-
-    console.log('API Request:', {
-      email,
-      timestamp: new Date().toISOString(),
-      headers: Object.fromEntries(request.headers),
-      url: request.url
-    });
-
-    console.log('Making ImprovMX API requests for:', email);
     
     // Try both messages and logs endpoints
     const [messagesResponse, logsResponse] = await Promise.all([
@@ -206,7 +194,7 @@ export async function GET(request: Request) {
             'Content-Type': 'application/json'
           },
           params: { 
-            to: email,
+            recipient: email,
             limit: 50,
             order: 'desc'
           }
@@ -214,7 +202,7 @@ export async function GET(request: Request) {
       ).catch(error => ({ 
         data: { messages: [] }, 
         error 
-      } as APIResponse<MessagesResponse>)),
+      })),
 
       axios.get<LogsResponse>(
         `https://api.improvmx.com/v3/domains/${DOMAIN}/logs`,
@@ -232,19 +220,8 @@ export async function GET(request: Request) {
       ).catch(error => ({ 
         data: { logs: [] }, 
         error 
-      } as APIResponse<LogsResponse>))
+      }))
     ]);
-
-    console.log('API Responses:', {
-      messages: {
-        count: messagesResponse.data.messages?.length,
-        error: (messagesResponse as APIResponse<MessagesResponse>).error?.message
-      },
-      logs: {
-        count: logsResponse.data.logs?.length,
-        error: (logsResponse as APIResponse<LogsResponse>).error?.message
-      }
-    });
 
     // Combine and deduplicate messages
     const allMessages = [
@@ -255,37 +232,36 @@ export async function GET(request: Request) {
     );
 
     const messages = allMessages
-      .map(msg => ({
-        id: msg.id,
-        from: msg.sender?.address || msg.from || 'Unknown',
-        to: msg.recipient || msg.to || email,
-        subject: msg.subject || '(No Subject)',
-        content: msg.content || msg.text || '',
-        receivedAt: msg.created || new Date(msg.date || '').getTime(),
-        messageId: msg.messageId,
-        url: msg.url
-      }))
+      .map(msg => {
+        // Helper function to get recipient
+        const getRecipient = (msg: ImprovMXMessage) => {
+          if (typeof msg.recipient === 'string') return msg.recipient;
+          if (msg.recipient?.address) return msg.recipient.address;
+          return msg.to || email;
+        };
+
+        return {
+          id: msg.id,
+          from: msg.sender?.address || msg.from || 'Unknown',
+          to: getRecipient(msg),
+          subject: msg.subject || '(No Subject)',
+          content: msg.content || msg.text || '',
+          receivedAt: msg.created || new Date(msg.date || '').getTime(),
+          messageId: msg.messageId,
+          url: msg.url
+        };
+      })
       .sort((a, b) => b.receivedAt - a.receivedAt);
 
-    // Filter messages for this specific email
-    const filteredMessages = messages.filter(msg => 
-      msg.to.toLowerCase() === email.toLowerCase()
-    );
-
-    console.log('Filtered messages:', {
-      total: messages.length,
-      filtered: filteredMessages.length,
-      email: email
-    });
+    console.log('Messages found:', messages.length);
 
     return NextResponse.json({
-      messages: filteredMessages,
-      count: filteredMessages.length,
+      messages,
+      count: messages.length,
       debug: {
         email,
         messagesCount: messagesResponse.data.messages?.length || 0,
-        logsCount: logsResponse.data.logs?.length || 0,
-        combinedCount: messages.length
+        logsCount: logsResponse.data.logs?.length || 0
       }
     }, { headers });
 
