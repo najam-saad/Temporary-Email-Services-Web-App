@@ -27,7 +27,7 @@ export default function Home() {
               Temp-emails
             </h1>
             <p className="text-xl text-gray-700 mb-6">
-              Secure, anonymous email that expires in minutes
+               email that expires in minutes
             </p>
             {emailAddress && (
               <p className="text-lg text-blue-600 mb-4">
