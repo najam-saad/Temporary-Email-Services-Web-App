@@ -37,6 +37,26 @@ interface ImprovMXResponse {
   emails: ImprovMXEmail[];
 }
 
+interface ImprovMXLog {
+  id: string;
+  created: number;
+  subject: string;
+  sender: {
+    address: string;
+    name?: string;
+  };
+  recipient: {
+    address: string;
+    name?: string;
+  };
+  forward: {
+    address: string;
+    name?: string;
+  };
+  messageId: string;
+  url?: string;
+}
+
 export async function POST(request: Request) {
   console.log('Starting email generation...');
   
@@ -106,9 +126,6 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  console.log('Fetching emails on deployed site...');
-  
-  // Add CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -117,28 +134,15 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const email = url.searchParams.get('email');
-  
-  console.log('Fetching emails for:', email);
 
+  // Handle root endpoint
   if (!email) {
-    return NextResponse.json(
-      { error: "Email is required" },
-      { status: 400, headers }
-    );
+    return NextResponse.json({ status: 'ok' }, { headers });
   }
 
   try {
-    // Log configuration
-    console.log('API Configuration:', {
-      hasApiKey: !!API_KEY,
-      domain: DOMAIN,
-      hasEmailUser: !!EMAIL_USER
-    });
-
-    // Fetch emails from ImprovMX with detailed logging
-    console.log('Fetching from ImprovMX...');
     const response = await axios.get(
-      `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
+      `https://api.improvmx.com/v3/domains/${DOMAIN}/logs`,
       {
         headers: {
           'Authorization': `Basic ${authHeader}`,
@@ -152,49 +156,25 @@ export async function GET(request: Request) {
       }
     );
 
-    console.log('ImprovMX Response:', {
-      status: response.status,
-      emailCount: response.data.emails?.length || 0,
-      firstEmail: response.data.emails?.[0] ? {
-        from: response.data.emails[0].from,
-        subject: response.data.emails[0].subject,
-        date: response.data.emails[0].date
-      } : null
-    });
-
-    // Process emails with logging
-    if (response.data.emails) {
-      const messages = response.data.emails
-        .filter((mail: ImprovMXEmail) => mail.to === email)
-        .map((mail: ImprovMXEmail) => ({
-          id: mail.id,
-          from: mail.from,
-          subject: mail.subject || '(No Subject)',
-          content: mail.html || mail.text || '',
-          receivedAt: new Date(mail.date).getTime()
-        }));
-
-      console.log(`Processed ${messages.length} messages for inbox`);
-
-      return NextResponse.json({
-        messages,
-        count: messages.length
-      }, { headers });
-    }
+    const messages = response.data.logs
+      ?.filter((log: ImprovMXLog) => log.recipient.address === email)
+      ?.map((log: ImprovMXLog) => ({
+        id: log.id,
+        from: log.sender.address,
+        subject: log.subject || '(No Subject)',
+        content: '',  // Content needs to be fetched separately if needed
+        receivedAt: log.created,
+        messageId: log.messageId,
+        url: log.url
+      })) || [];
 
     return NextResponse.json({
-      messages: [],
-      info: "No emails found"
+      messages,
+      count: messages.length
     }, { headers });
 
   } catch (error: any) {
-    console.error('Error details:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      config: error.config
-    });
-    
+    console.error('Error:', error.response?.data || error.message);
     return NextResponse.json({
       error: "Could not fetch messages",
       details: error.response?.data?.error || error.message
