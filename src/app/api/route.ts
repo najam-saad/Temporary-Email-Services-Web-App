@@ -1,29 +1,6 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import axios from 'axios';
-
-// Email store (Note: This will reset on each function call in serverless)
-// Consider using a database like MongoDB or Redis instead
-const emailStore: {
-  [key: string]: {
-    messages: Array<{
-      from: string;
-      subject: string;
-      content: string;
-      receivedAt: number;
-    }>;
-    expiresAt: number;
-  };
-} = {};
-
-// SMTP Configuration
-export const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+import { emailStore, transporter } from '@/utils/email';
 
 if (!process.env.IMPROVMX_API_KEY) {
   throw new Error('IMPROVMX_API_KEY is not defined in environment variables');
