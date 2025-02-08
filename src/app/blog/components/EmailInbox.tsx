@@ -11,6 +11,7 @@ interface EmailMessage {
   subject: string;
   content: string;
   receivedAt: number;
+  url?: string;
 }
 
 interface EmailInboxProps {
@@ -26,30 +27,25 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
 
   const checkInbox = async () => {
+    if (!email) return; // Don't check if no email
+
     try {
+      setLoading(true);
       console.log('Checking inbox for:', email);
-      console.log('Current time:', new Date().toISOString());
-      console.log('Expires at:', new Date(expiresAt).toISOString());
 
       const response = await axios.get('/api', {
         params: { email }
       });
 
-      console.log('Inbox response:', {
-        status: response.status,
-        messageCount: response.data.messages?.length,
-        debug: response.data.debug
-      });
+      // Ensure messages is always an array
+      const receivedMessages = response.data.messages || [];
+      console.log('Received messages:', receivedMessages);
 
-      setMessages(response.data.messages || []);
+      setMessages(receivedMessages);
       setLastCheck(new Date());
       setError(null);
     } catch (error: any) {
-      console.error('Inbox check failed:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
+      console.error('Inbox check failed:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -57,27 +53,26 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
   };
 
   useEffect(() => {
-    console.log('EmailInbox mounted for:', email);
-    
-    // Initial check
-    checkInbox();
+    let interval: NodeJS.Timeout;
 
-    // Set up periodic checking
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (now < expiresAt) {
-        console.log('Performing periodic inbox check');
-        checkInbox();
-      } else {
-        console.log('Email expired, stopping checks');
-        clearInterval(interval);
-        onExpire?.();
-      }
-    }, 10000);
+    const startChecking = async () => {
+      await checkInbox(); // Initial check
+
+      interval = setInterval(() => {
+        const now = Date.now();
+        if (now < expiresAt) {
+          checkInbox();
+        } else {
+          clearInterval(interval);
+          onExpire?.();
+        }
+      }, 10000);
+    };
+
+    startChecking();
 
     return () => {
-      console.log('EmailInbox unmounting, clearing interval');
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
     };
   }, [email, expiresAt, onExpire]);
 
@@ -130,12 +125,22 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
               <div className="flex justify-between">
                 <span className="font-medium">{message.from}</span>
                 <span className="text-sm text-gray-500">
-                  {formatTime(message.receivedAt)}
+                  {new Date(message.receivedAt).toLocaleString()}
                 </span>
               </div>
               <h3 className="text-lg font-semibold">{message.subject}</h3>
               {message.content && (
                 <div className="mt-2 text-gray-700">{message.content}</div>
+              )}
+              {message.url && (
+                <a 
+                  href={message.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 text-blue-600 hover:underline"
+                >
+                  View full message
+                </a>
               )}
             </div>
           ))}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 import EmailGenerator from "./blog/components/EmailGenerator";
@@ -13,10 +13,15 @@ export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>("");
   const [expiryTime, setExpiryTime] = useState<number>(0);
 
-  const handleEmailGenerate = (newEmail: string, duration: number) => {
+  const handleEmailGenerate = useCallback((newEmail: string, duration: number) => {
     setEmailAddress(newEmail);
     setExpiryTime(Date.now() + duration * 60 * 1000);
-  };
+  }, []);
+
+  const handleExpire = useCallback(() => {
+    setEmailAddress("");
+    setExpiryTime(0);
+  }, []);
 
   return (
     <ErrorBoundary>
@@ -57,10 +62,7 @@ export default function Home() {
                       key={emailAddress}
                       email={emailAddress}
                       expiresAt={expiryTime}
-                      onExpire={() => {
-                        setEmailAddress("");
-                        setExpiryTime(0);
-                      }}
+                      onExpire={handleExpire}
                     />
                   </ErrorBoundary>
                 )}
