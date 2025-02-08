@@ -25,6 +25,7 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
   const generateEmail = async () => {
     setLoading(true);
     setError(null);
+    setEmail(''); // Clear any existing email
     
     try {
       console.log('Generating email with duration:', duration);
@@ -37,22 +38,23 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
         body: JSON.stringify({ expireTime: duration }),
       });
 
+      const data = await response.json();
+      
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to generate email');
       }
 
-      const data = await response.json();
-      console.log('Email generated:', data);
+      console.log('Email generation response:', data);
       
       if (data.success && data.email) {
+        setEmail(data.email);
         onGenerate(data.email, duration);
       } else {
         throw new Error('Invalid response from server');
       }
     } catch (error: any) {
       console.error('Generation error:', error);
-      setError(error.message);
+      setError(error.message || 'Failed to generate email');
     } finally {
       setLoading(false);
     }

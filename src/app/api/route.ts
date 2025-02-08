@@ -175,19 +175,23 @@ export async function GET(request: Request) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
 
-  const url = new URL(request.url);
-  const email = url.searchParams.get('email');
-
-  // Handle root endpoint
-  if (!email) {
-    return NextResponse.json({ status: 'ok' }, { headers });
-  }
-
-  console.log('Fetching emails for:', email);
-  console.log('Using ImprovMX API Key:', API_KEY ? 'Present' : 'Missing');
-  console.log('Domain:', DOMAIN);
-
   try {
+    const url = new URL(request.url);
+    const email = url.searchParams.get('email');
+
+    // Handle root endpoint
+    if (!email) {
+      return NextResponse.json({ 
+        status: 'ok',
+        messages: [],
+        count: 0
+      }, { headers });
+    }
+
+    console.log('Fetching emails for:', email);
+    console.log('Using ImprovMX API Key:', API_KEY ? 'Present' : 'Missing');
+    console.log('Domain:', DOMAIN);
+
     console.log('API Request:', {
       email,
       timestamp: new Date().toISOString(),
@@ -268,30 +272,22 @@ export async function GET(request: Request) {
       .sort((a, b) => b.receivedAt - a.receivedAt);
 
     return NextResponse.json({
-      messages,
-      count: messages.length,
+      messages: messages || [], // Ensure we always return an array
+      count: messages?.length || 0,
       debug: {
         email,
-        messagesCount: messagesResponse.data.messages?.length,
-        logsCount: logsResponse.data.logs?.length,
-        combinedCount: messages.length
+        messagesCount: messagesResponse.data.messages?.length || 0,
+        logsCount: logsResponse.data.logs?.length || 0,
+        combinedCount: messages?.length || 0
       }
     }, { headers });
 
   } catch (error: any) {
-    console.error('Error:', {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      config: {
-        url: error.config?.url,
-        params: error.config?.params,
-        headers: error.config?.headers
-      }
-    });
+    console.error('API Error:', error);
     return NextResponse.json({
-      error: "Could not fetch messages",
-      details: error.response?.data?.error || error.message
+      messages: [],
+      count: 0,
+      error: error.message || 'Failed to fetch messages'
     }, { 
       status: error.response?.status || 500,
       headers 

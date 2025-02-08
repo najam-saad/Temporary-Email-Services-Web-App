@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { Mail, RefreshCw } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
@@ -26,8 +26,11 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
   const [error, setError] = useState<string | null>(null);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
 
-  const checkInbox = async () => {
-    if (!email) return; // Don't check if no email
+  const checkInbox = useCallback(async () => {
+    if (!email) {
+      console.warn('No email provided to EmailInbox');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -37,28 +40,47 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
         params: { email }
       });
 
+      // Ensure we have a valid response
+      if (!response.data) {
+        throw new Error('Invalid response from server');
+      }
+
       // Ensure messages is always an array
-      const receivedMessages = response.data.messages || [];
-      console.log('Received messages:', receivedMessages);
+      const receivedMessages = Array.isArray(response.data.messages) 
+        ? response.data.messages 
+        : [];
+
+      console.log('Received messages:', {
+        count: receivedMessages.length,
+        messages: receivedMessages
+      });
 
       setMessages(receivedMessages);
       setLastCheck(new Date());
       setError(null);
     } catch (error: any) {
-      console.error('Inbox check failed:', error);
-      setError(error.message);
+      console.error('Inbox check failed:', {
+        error,
+        email,
+        message: error.message,
+        response: error.response?.data
+      });
+      setError(error.message || 'Failed to check inbox');
     } finally {
       setLoading(false);
     }
-  };
+  }, [email]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
+    let mounted = true;
 
     const startChecking = async () => {
-      await checkInbox(); // Initial check
+      if (mounted) await checkInbox();
 
       interval = setInterval(() => {
+        if (!mounted) return;
+        
         const now = Date.now();
         if (now < expiresAt) {
           checkInbox();
@@ -72,9 +94,10 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
     startChecking();
 
     return () => {
+      mounted = false;
       if (interval) clearInterval(interval);
     };
-  }, [email, expiresAt, onExpire]);
+  }, [email, expiresAt, onExpire, checkInbox]);
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
