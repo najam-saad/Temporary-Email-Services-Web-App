@@ -30,22 +30,31 @@ interface ImprovMXAliasResponse {
   success: boolean;
 }
 
-const NETLIFY_URL = 'https://deluxe-gumdrop-48056b.netlify.app';
+const BASE_URL = 'https://67a6e15d2e8776830d7e9a3c--deluxe-gumdrop-48056b.netlify.app';
+const API_URL = `${BASE_URL}/api`;
 
 async function testNetlifyDeployment(): Promise<void> {
   try {
     // 1. Test environment
-    console.log('\n🔍 Testing Netlify deployment...');
-    console.log('URL:', NETLIFY_URL);
-    console.log('Environment:', {
-      hasApiKey: !!process.env.IMPROVMX_API_KEY,
-      hasDomain: !!process.env.DOMAIN,
-      hasEmailUser: !!process.env.EMAIL_USER
-    });
+    console.log('\n🔍 Testing deployment...');
+    console.log('URL:', API_URL);
+    
+    // Test API endpoint first
+    try {
+      const healthCheck = await axios.get(API_URL);
+      console.log('API endpoint check:', healthCheck.status === 200 ? '✅ OK' : '❌ Failed');
+      console.log('Health check response:', healthCheck.data);
+    } catch (error: any) {
+      console.log('❌ API endpoint not accessible:', error.message);
+      if (error.response) {
+        console.log('Response:', error.response.data);
+      }
+      return;
+    }
 
     // 2. Generate email
     console.log('\n📧 Generating temporary email...');
-    const createResponse = await axios.post(`${NETLIFY_URL}/api`, {
+    const createResponse = await axios.post(API_URL, {
       expireTime: 10
     });
     
@@ -100,11 +109,17 @@ async function testNetlifyDeployment(): Promise<void> {
         {
           headers: { 'Authorization': `Basic ${authHeader}` },
           params: {
-            to: email,
+            recipient: email,
             limit: 10
           }
         }
       );
+
+      console.log('API Response:', {
+        success: emailsResponse.data.success,
+        totalLogs: emailsResponse.data.logs?.length,
+        firstLogRecipient: emailsResponse.data.logs?.[0]?.recipient
+      });
 
       if (emailsResponse.data.logs?.length > 0) {
         console.log('✅ Emails found:', emailsResponse.data.logs.length);
@@ -116,6 +131,7 @@ async function testNetlifyDeployment(): Promise<void> {
             Date: ${new Date(log.created).toLocaleString()}
             Message ID: ${log.messageId}
             ${log.url ? `Download URL: ${log.url}` : ''}
+            Recipient matches: ${(log.recipient?.address || '').toLowerCase() === email.toLowerCase()}
           `);
         });
       } else {
@@ -124,10 +140,24 @@ async function testNetlifyDeployment(): Promise<void> {
 
       // 6. Check website inbox
       console.log('\n🌐 Checking website inbox...');
-      const inboxResponse = await axios.get(`${NETLIFY_URL}/api`, {
+      const inboxResponse = await axios.get(API_URL, {
         params: { email }
       });
-      console.log('Website inbox:', inboxResponse.data);
+      
+      console.log('Website inbox response:', {
+        messages: inboxResponse.data.messages,
+        count: inboxResponse.data.count,
+        debug: inboxResponse.data.debug,
+        requestedEmail: email
+      });
+
+      if (inboxResponse.data.debug) {
+        console.log('\nDebug information:');
+        console.log('Total logs:', inboxResponse.data.debug.totalLogs);
+        console.log('Filtered count:', inboxResponse.data.debug.filteredCount);
+        console.log('First log:', JSON.stringify(inboxResponse.data.debug.firstLog, null, 2));
+        console.log('Search params:', inboxResponse.data.debug.params);
+      }
 
     } catch (error) {
       if (axios.isAxiosError(error)) {

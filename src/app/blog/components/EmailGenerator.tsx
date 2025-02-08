@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { Clock, Copy } from 'lucide-react';
 
@@ -8,8 +10,8 @@ interface EmailGeneratorProps {
 export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
   const [email, setEmail] = useState('');
   const [copied, setCopied] = useState(false);
-  const [duration, setDuration] = useState(20);
-  const [isLoading, setIsLoading] = useState(false);
+  const [duration, setDuration] = useState(10);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const durationOptions = [
@@ -21,43 +23,38 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
   ];
 
   const generateEmail = async () => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
     
     try {
       console.log('Generating email with duration:', duration);
       
-      const randomString = Math.random().toString(36).substring(2, 8);
-      const tempEmail = `${randomString}@tempfreeemail.com`;
-
-      console.log('Requesting email generation:', tempEmail);
-
       const response = await fetch('/api', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: tempEmail,
-          expireTime: duration
-        })
+        body: JSON.stringify({ expireTime: duration }),
       });
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        console.error('API Error Response:', data);
+        const data = await response.json();
         throw new Error(data.error || 'Failed to generate email');
       }
 
-      console.log('Email generated successfully:', data);
-      setEmail(tempEmail);
-      onGenerate(tempEmail, duration);
-    } catch (err: any) {
-      console.error('Generation error:', err);
-      setError(err.message || 'Failed to generate email. Please try again.');
+      const data = await response.json();
+      console.log('Email generated:', data);
+      
+      if (data.success && data.email) {
+        onGenerate(data.email, duration);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Generation error:', error);
+      setError(error.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -81,7 +78,7 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
             className="bg-gray-50 border border-gray-200 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
+            disabled={loading}
           >
             {durationOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -102,7 +99,7 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
           />
           <button
             onClick={copyToClipboard}
-            disabled={!email || isLoading}
+            disabled={!email || loading}
             className={`p-4 rounded-lg transition-all duration-300 ${
               copied 
                 ? 'bg-green-500 text-white' 
@@ -116,12 +113,12 @@ export default function EmailGenerator({ onGenerate }: EmailGeneratorProps) {
           </button>
           <button
             onClick={generateEmail}
-            disabled={isLoading}
+            disabled={loading}
             className={`p-4 bg-blue-600 text-white rounded-lg transition-colors ${
-              isLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
+              loading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-700'
             }`}
           >
-            {isLoading ? 'Generating...' : 'Generate'}
+            {loading ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>

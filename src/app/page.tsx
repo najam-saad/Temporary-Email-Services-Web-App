@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 import EmailGenerator from "./blog/components/EmailGenerator";
 import EmailInbox from "./blog/components/EmailInbox";
@@ -18,52 +19,58 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      
-      <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100">
-        <div className="max-w-4xl mx-auto px-4 py-12">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-extrabold text-gray-900 mb-3">
-              Temp-emails
-            </h1>
-            <p className="text-xl text-gray-700 mb-6">
-              Email that expires in minutes
-            </p>
-            <div className="max-w-lg mx-auto mb-8">
-              <Image
-                src="/hero-mail.svg"
-                alt="Secure Email"
-                width={400}
-                height={300}
-                className="mx-auto"
-                priority
-                style={{
-                  maxWidth: '100%',
-                  height: 'auto'
-                }}
-              />
+    <ErrorBoundary>
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        
+        <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100">
+          <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="text-center mb-12">
+              <h1 className="text-5xl font-extrabold text-gray-900 mb-3">
+                Temp-emails
+              </h1>
+              <p className="text-xl text-gray-700 mb-6">
+                Email that expires in minutes
+              </p>
+              <div className="max-w-lg mx-auto mb-8">
+                <Image
+                  src="/hero-mail.svg"
+                  alt="Secure Email"
+                  width={400}
+                  height={300}
+                  className="mx-auto"
+                  priority
+                  style={{
+                    maxWidth: '100%',
+                    height: 'auto'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="max-w-2xl mx-auto">
+              <ErrorBoundary>
+                <EmailGenerator onGenerate={handleEmailGenerate} />
+                {emailAddress && expiryTime > 0 && (
+                  <ErrorBoundary>
+                    <EmailInbox
+                      key={emailAddress}
+                      email={emailAddress}
+                      expiresAt={expiryTime}
+                      onExpire={() => {
+                        setEmailAddress("");
+                        setExpiryTime(0);
+                      }}
+                    />
+                  </ErrorBoundary>
+                )}
+              </ErrorBoundary>
             </div>
           </div>
+        </main>
 
-          <div className="max-w-2xl mx-auto">
-            <EmailGenerator onGenerate={handleEmailGenerate} />
-            {emailAddress && expiryTime > 0 && (
-              <EmailInbox
-                key={emailAddress}
-                email={emailAddress}
-                expiryTime={expiryTime}
-                onExpire={() => {
-                  setEmailAddress("");
-                  setExpiryTime(0);
-                }}
-              />
-            )}
-          </div>
-        </div>
-      </main>
-
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </ErrorBoundary>
   );
 }

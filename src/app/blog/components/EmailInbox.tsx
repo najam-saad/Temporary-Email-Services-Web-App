@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import CountdownTimer from './CountdownTimer';
-import { Mail, RefreshCw } from 'lucide-react';
+'use client';
 
-interface Email {
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+import { Mail, RefreshCw } from 'lucide-react';
+import CountdownTimer from './CountdownTimer';
+
+interface EmailMessage {
   id: string;
   from: string;
   subject: string;
@@ -12,61 +15,71 @@ interface Email {
 
 interface EmailInboxProps {
   email: string;
-  expiryTime: number;
-  onExpire: () => void;
+  expiresAt: number;
+  onExpire?: () => void;
 }
 
-export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxProps) {
-  const [messages, setMessages] = useState<Email[]>([]);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxProps) {
+  const [messages, setMessages] = useState<EmailMessage[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const [lastCheck, setLastCheck] = useState<Date | null>(null);
 
-  const fetchEmails = useCallback(async () => {
-    if (!email) return;
+  const checkInbox = async () => {
     try {
-      setIsRefreshing(true);
+      console.log('Checking inbox for:', email);
+      console.log('Current time:', new Date().toISOString());
+      console.log('Expires at:', new Date(expiresAt).toISOString());
+
+      const response = await axios.get('/api', {
+        params: { email }
+      });
+
+      console.log('Inbox response:', {
+        status: response.status,
+        messageCount: response.data.messages?.length,
+        debug: response.data.debug
+      });
+
+      setMessages(response.data.messages || []);
+      setLastCheck(new Date());
       setError(null);
-      
-      const response = await fetch(`/api?email=${email}`);
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch emails');
-      }
-
-      if (data.expired) {
-        onExpire();
-        return;
-      }
-
-      if (data.warning) {
-        setError(data.warning);
-      }
-
-      if (data.messages) {
-        setMessages(data.messages);
-      }
-    } catch (error) {
-      console.error('Failed to fetch emails:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch emails');
+    } catch (error: any) {
+      console.error('Inbox check failed:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      setError(error.message);
     } finally {
-      setIsRefreshing(false);
+      setLoading(false);
     }
-  }, [email, onExpire]);
+  };
 
   useEffect(() => {
-    if (!email) return;
+    console.log('EmailInbox mounted for:', email);
     
-    fetchEmails();
-    intervalRef.current = setInterval(fetchEmails, 10000);
-    
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    // Initial check
+    checkInbox();
+
+    // Set up periodic checking
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now < expiresAt) {
+        console.log('Performing periodic inbox check');
+        checkInbox();
+      } else {
+        console.log('Email expired, stopping checks');
+        clearInterval(interval);
+        onExpire?.();
       }
+    }, 10000);
+
+    return () => {
+      console.log('EmailInbox unmounting, clearing interval');
+      clearInterval(interval);
     };
-  }, [fetchEmails, email]);
+  }, [email, expiresAt, onExpire]);
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -78,62 +91,56 @@ export default function EmailInbox({ email, expiryTime, onExpire }: EmailInboxPr
     });
   };
 
-  return (
-    <div className="bg-white rounded-xl shadow-lg mt-8">
-      <div className="p-4 flex justify-between items-center border-b border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-800">Inbox</h2>
-        <div className="flex items-center gap-3">
-          <CountdownTimer expiryTime={expiryTime} onExpire={onExpire} />
-          <button
-            onClick={() => fetchEmails()}
-            disabled={isRefreshing}
-            className={`p-2 rounded-full hover:bg-gray-100 transition-all ${
-              isRefreshing ? 'animate-spin' : ''
-            }`}
-            title="Refresh inbox"
-          >
-            <RefreshCw className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+        <h3 className="font-bold">Error checking inbox</h3>
+        <p>{error}</p>
+        <button 
+          onClick={checkInbox}
+          className="mt-2 px-4 py-2 bg-red-100 hover:bg-red-200 rounded"
+        >
+          Retry
+        </button>
       </div>
+    );
+  }
 
-      {error && (
-        <div className="p-4 bg-yellow-50 border-b border-yellow-100">
-          <p className="text-yellow-800">{error}</p>
-        </div>
-      )}
-
-      <div className="p-8">
-        {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <Mail className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">Your inbox is empty</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className="p-4 border border-gray-100 rounded-lg hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">{msg.subject}</h3>
-                    <p className="text-sm text-gray-600 mt-1">From: {msg.from}</p>
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {formatTime(msg.receivedAt)}
-                  </span>
-                </div>
-                <div
-                  className="mt-3 text-sm text-gray-600"
-                  dangerouslySetInnerHTML={{ __html: msg.content }}
-                />
-              </div>
-            ))}
-          </div>
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Inbox for {email}</h2>
+        {lastCheck && (
+          <p className="text-sm text-gray-500">
+            Last checked: {lastCheck.toLocaleTimeString()}
+          </p>
         )}
       </div>
+
+      {loading ? (
+        <div className="p-4 text-center">Loading messages...</div>
+      ) : messages.length === 0 ? (
+        <div className="p-4 text-center text-gray-500">
+          No messages yet. They will appear here automatically.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {messages.map((message) => (
+            <div key={message.id} className="p-4 border rounded-lg">
+              <div className="flex justify-between">
+                <span className="font-medium">{message.from}</span>
+                <span className="text-sm text-gray-500">
+                  {formatTime(message.receivedAt)}
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold">{message.subject}</h3>
+              {message.content && (
+                <div className="mt-2 text-gray-700">{message.content}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 
