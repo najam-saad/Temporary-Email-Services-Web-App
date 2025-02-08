@@ -106,90 +106,101 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  console.log('GET request received');
+  console.log('Fetching emails on deployed site...');
   
-  if (!API_KEY) {
-    console.error('API key missing');
-    return NextResponse.json(
-      { error: "API key not configured" },
-      { status: 500 }
-    );
-  }
+  // Add CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
 
   const url = new URL(request.url);
   const email = url.searchParams.get('email');
   
+  console.log('Fetching emails for:', email);
+
   if (!email) {
     return NextResponse.json(
       { error: "Email is required" },
-      { status: 400 }
+      { status: 400, headers }
     );
   }
 
   try {
-    // Initialize store if needed
-    if (!emailStore[email]) {
-      emailStore[email] = {
-        messages: [],
-        expiresAt: Date.now() + (60 * 60 * 1000)
-      };
-    }
+    // Log configuration
+    console.log('API Configuration:', {
+      hasApiKey: !!API_KEY,
+      domain: DOMAIN,
+      hasEmailUser: !!EMAIL_USER
+    });
 
-    // Check if email has expired
-    if (emailStore[email].expiresAt < Date.now()) {
-      return NextResponse.json({
-        messages: [],
-        expired: true
-      });
-    }
-
-    try {
-      const response = await axios.get<ImprovMXResponse>(
-        `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
-        {
-          headers: {
-            'Authorization': `Basic ${authHeader}`,
-            'Content-Type': 'application/json'
-          },
-          params: { to: email }
+    // Fetch emails from ImprovMX with detailed logging
+    console.log('Fetching from ImprovMX...');
+    const response = await axios.get(
+      `https://api.improvmx.com/v3/domains/${DOMAIN}/emails`,
+      {
+        headers: {
+          'Authorization': `Basic ${authHeader}`,
+          'Content-Type': 'application/json'
+        },
+        params: { 
+          to: email,
+          limit: 50,
+          order: 'desc'
         }
-      );
+      }
+    );
 
-      console.log('ImprovMX response:', response.data);
+    console.log('ImprovMX Response:', {
+      status: response.status,
+      emailCount: response.data.emails?.length || 0,
+      firstEmail: response.data.emails?.[0] ? {
+        from: response.data.emails[0].from,
+        subject: response.data.emails[0].subject,
+        date: response.data.emails[0].date
+      } : null
+    });
 
-      if (response.data.emails) {
-        const messages: EmailMessage[] = response.data.emails.map((mail) => ({
+    // Process emails with logging
+    if (response.data.emails) {
+      const messages = response.data.emails
+        .filter((mail: ImprovMXEmail) => mail.to === email)
+        .map((mail: ImprovMXEmail) => ({
           id: mail.id,
           from: mail.from,
-          subject: mail.subject,
+          subject: mail.subject || '(No Subject)',
           content: mail.html || mail.text || '',
           receivedAt: new Date(mail.date).getTime()
         }));
-        
-        emailStore[email].messages = messages;
-      }
+
+      console.log(`Processed ${messages.length} messages for inbox`);
 
       return NextResponse.json({
-        messages: emailStore[email].messages
-      });
-    } catch (error: any) {
-      console.error('ImprovMX Error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      
-      // Return stored messages if ImprovMX fails
-      return NextResponse.json({
-        messages: emailStore[email].messages,
-        warning: "Could not fetch new messages"
-      });
+        messages,
+        count: messages.length
+      }, { headers });
     }
-  } catch (error) {
-    console.error("Error fetching emails:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch emails" },
-      { status: 500 }
-    );
+
+    return NextResponse.json({
+      messages: [],
+      info: "No emails found"
+    }, { headers });
+
+  } catch (error: any) {
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      config: error.config
+    });
+    
+    return NextResponse.json({
+      error: "Could not fetch messages",
+      details: error.response?.data?.error || error.message
+    }, { 
+      status: error.response?.status || 500,
+      headers 
+    });
   }
 } 
