@@ -11,10 +11,12 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@prisma/client": "^6.3.1",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.9",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
+    "email-address": "^1.2.2",
     "lucide-react": "^0.358.0",
     "next": "15.1.6",
     "nodemailer": "^6.10.0",

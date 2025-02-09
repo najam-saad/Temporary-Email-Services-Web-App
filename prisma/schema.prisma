@@ -1,0 +1,69 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TempEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  messages  Message[]
+  ipAddress String?
+  userAgent String?
+  isBlocked Boolean  @default(false)
+  
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model Message {
+  id        String    @id @default(cuid())
+  from      String
+  subject   String?
+  content   String
+  html      String?
+  receivedAt DateTime @default(now())
+  tempEmail TempEmail @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  emailId   String
+  headers   Json?
+  isSpam    Boolean   @default(false)
+  
+  @@index([emailId])
+  @@index([receivedAt])
+}
+
+model RateLimit {
+  id        String   @id @default(cuid())
+  key       String   @unique // IP address or other identifier
+  count     Int      @default(0)
+  resetAt   DateTime
+  
+  @@index([key])
+  @@index([resetAt])
+}
+
+model BlockedDomain {
+  id        String   @id @default(cuid())
+  domain    String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+  
+  @@index([domain])
+}
+
+model SpamSignature {
+  id        String   @id @default(cuid())
+  pattern   String   @unique
+  score     Float    @default(1.0)
+  createdAt DateTime @default(now())
+  
+  @@index([pattern])
+} 

@@ -6,34 +6,46 @@ import { websiteSchema, organizationSchema, serviceSchema } from '../utils/schem
 export const metadata: Metadata = {
   metadataBase: new URL('https://tempfreeemail.com'),
   title: {
-    default: 'Temp-emails | Secure Temporary Email Service',
+    default: 'Temp-emails | Secure 20-Minute Temporary Email Service',
     template: '%s | Temp-emails'
   },
-  description: 'Get instant, secure temporary email addresses with Temp-emails. Protect your privacy and avoid spam with our disposable email service.',
-  keywords: ['temporary email', 'disposable email', 'temp mail', 'anonymous email', 'privacy', 'anti-spam'],
+  description: 'Get instant, secure temporary email addresses that last 20 minutes. Protect your privacy, avoid spam, and sign up for services safely with our disposable email service.',
+  keywords: [
+    'temporary email',
+    'disposable email',
+    'temp mail',
+    'anonymous email',
+    'privacy',
+    'anti-spam',
+    '20 minute email',
+    'secure email',
+    'temporary inbox',
+    'email privacy'
+  ],
   authors: [{ name: 'Temp-emails Team' }],
   creator: 'Temp-emails',
   publisher: 'Temp-emails',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
-  verification: {
-    google: 'your-google-site-verification',
+  alternates: {
+    canonical: 'https://tempfreeemail.com',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://tempfreeemail.com',
     siteName: 'Temp-emails',
-    title: 'Secure Temporary Email Service',
-    description: 'Get instant, secure temporary email addresses. Protect your privacy and avoid spam.',
+    title: 'Secure 20-Minute Temporary Email Service',
+    description: 'Get instant, secure temporary email addresses. Protect your privacy and avoid spam with our 20-minute disposable email service.',
     images: [
       {
         url: '/og-image.jpg',
@@ -45,10 +57,16 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Temp-emails - Secure Temporary Email Service',
+    title: 'Temp-emails - Secure 20-Minute Temporary Email Service',
     description: 'Get instant, secure temporary email addresses. Protect your privacy and avoid spam.',
     images: ['/twitter-image.jpg'],
+    creator: '@temp_emails',
   },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code'
+  },
+  category: 'Technology',
 }
 
 export const generateSchemaMarkup = () => {
@@ -68,42 +86,33 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preconnect to required origins */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        
+        {/* Favicon and app icons */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        
         {/* Google AdSense */}
         <Script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9262259592522097"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
 
-        {/* Add this meta tag for AdSense verification */}
-        <meta name="google-adsense-account" content="ca-pub-9262259592522097" />
-
-        {/* Media.net */}
-        <Script
-          async
-          src="//contextual.media.net/dmedianet.js?cid=YOUR_MEDIANET_ID"
-          strategy="lazyOnload"
-        />
-
-        {/* Carbon Ads */}
-        <Script
-          async
-          src="//cdn.carbonads.com/carbon.js?serve=YOUR_CARBON_ZONE_ID"
-          id="_carbonads_js"
-          strategy="lazyOnload"
-        />
-
-        {/* BuySellAds */}
-        <Script
-          async
-          src="//m.servedby-buysellads.com/monetization.js"
-          strategy="lazyOnload"
-        />
-
+        {/* Schema.org structured data */}
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={generateSchemaMarkup()}
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@graph": [websiteSchema, organizationSchema, serviceSchema]
+            })
+          }}
         />
       </head>
       <body>{children}</body>

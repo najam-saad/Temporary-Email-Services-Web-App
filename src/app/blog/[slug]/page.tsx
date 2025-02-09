@@ -5,64 +5,29 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { articleSchema } from '@/utils/schema';
 import Script from 'next/script';
+import { getPostBySlug } from '@/data/blog-posts';
+import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
-interface BlogPost {
-  title: string;
-  date: string;
-  author: string;
-  authorBio: string;
-  coverImage: string;
-  excerpt: string;
-  content: string;
-  tags: string[];
-  readTime: string;
-  relatedPosts?: string[];
-}
-
-interface BlogPosts {
-  [key: string]: BlogPost;
-}
-
-// This would come from your CMS or data source
-const blogPosts: BlogPosts = {
-  '20-min-vs-10min': {
-    title: "Why 20 Minutes is Better Than 10 for Temporary Emails",
-    date: "2024-03-20",
-    author: "Privacy Expert",
-    authorBio: "Email security researcher with 10+ years of experience",
-    coverImage: "/blog/20min-vs-10min.jpg",
-    excerpt: "Discover why a 20-minute window provides the perfect balance between security and usability for temporary emails.",
-    content: `
-      <div class="prose prose-lg max-w-none">
-        <p class="lead text-xl text-gray-600 mb-8">
-          In the fast-paced world of digital services, timing is everything. While the industry standard has been set at 10 minutes for temporary email services, our research and user feedback have consistently shown that 20 minutes provides the optimal balance between security and functionality.
-        </p>
-        <h2>The Science Behind the 20-Minute Window</h2>
-        <p>Our research shows that...</p>
-      </div>
-    `,
-    tags: ["email privacy", "temporary email", "digital security", "online privacy"],
-    readTime: "5 min read",
-    relatedPosts: ['another-post-slug']
-  }
-};
-
-type Props = {
-  params: { slug: string }
-}
-
-export default function BlogPost({ params }: Props) {
-  const post = blogPosts[params.slug];
+export default function BlogPost({ params }: { params: { slug: string } }) {
+  const router = useRouter();
+  const post = getPostBySlug(params.slug);
 
   // Handle non-existent posts
   if (!post) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100 py-12">
+        <main className="flex-grow bg-white py-12">
           <div className="max-w-4xl mx-auto px-4">
             <h1 className="text-3xl font-bold text-gray-900 mb-4">Post Not Found</h1>
-            <p className="text-gray-600">The blog post you're looking for doesn't exist.</p>
+            <p className="text-gray-600 mb-4">The blog post you're looking for doesn't exist.</p>
+            <Link 
+              href="/blog"
+              className="text-blue-600 hover:underline"
+            >
+              Return to Blog
+            </Link>
           </div>
         </main>
         <Footer />
@@ -81,7 +46,7 @@ export default function BlogPost({ params }: Props) {
       />
       
       <Header />
-      <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100 py-12">
+      <main className="flex-grow bg-white py-12">
         <article className="max-w-4xl mx-auto px-4">
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
@@ -106,14 +71,19 @@ export default function BlogPost({ params }: Props) {
           </div>
 
           {/* Featured Image */}
-          <Image
-            src={post.coverImage}
-            alt={post.title}
-            width={1200}
-            height={600}
-            className="rounded-lg mb-8"
-            priority
-          />
+          <div className="relative h-[400px] w-full mb-8 rounded-lg overflow-hidden">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              fill
+              className="object-cover"
+              priority
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = '/blog/default-post.svg';
+              }}
+            />
+          </div>
 
           {/* Content */}
           <div 
@@ -122,7 +92,7 @@ export default function BlogPost({ params }: Props) {
           />
 
           {/* Author Bio */}
-          <div className="bg-white rounded-lg p-6 mb-8">
+          <div className="bg-gray-50 rounded-lg p-6 mb-8">
             <h2 className="text-xl font-semibold mb-2">About the Author</h2>
             <p className="text-gray-600">{post.authorBio}</p>
           </div>
@@ -131,7 +101,39 @@ export default function BlogPost({ params }: Props) {
           {post.relatedPosts && post.relatedPosts.length > 0 && (
             <div className="border-t pt-8">
               <h2 className="text-2xl font-bold mb-6">Related Articles</h2>
-              {/* Add related posts grid here */}
+              <div className="grid gap-6">
+                {post.relatedPosts.map((slug) => {
+                  const relatedPost = getPostBySlug(slug);
+                  if (!relatedPost) return null;
+                  
+                  return (
+                    <Link 
+                      href={`/blog/${relatedPost.slug}`}
+                      key={relatedPost.slug}
+                      className="group flex gap-4 items-start p-4 rounded-lg border hover:shadow-md transition-shadow"
+                    >
+                      <div className="relative h-24 w-24 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
+                        <Image
+                          src={relatedPost.coverImage}
+                          alt={relatedPost.title}
+                          fill
+                          className="object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/blog/default-post.svg';
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                          {relatedPost.title}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">{relatedPost.excerpt}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           )}
         </article>
