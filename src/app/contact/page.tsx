@@ -1,4 +1,3 @@
-"use client";
 import Header from "../blog/components/Header";
 import Footer from "../blog/components/Footer";
 import { Mail, MessageCircle, AlertTriangle, Briefcase } from 'lucide-react';

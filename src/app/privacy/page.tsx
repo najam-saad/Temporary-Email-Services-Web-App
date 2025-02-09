@@ -1,4 +1,3 @@
-"use client";
 import type { Metadata } from 'next'
 import Header from "../blog/components/Header";
 import Footer from "../blog/components/Footer";
