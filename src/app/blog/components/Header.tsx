@@ -15,19 +15,17 @@ export default function Header() {
               <a href="/" className="text-gray-900 font-semibold">
                 Temp-emails
               </a>
-              <a href="/blog" className="text-gray-600 hover:text-gray-900">
-                Blog
+              <a href="/about" className="text-gray-600 hover:text-gray-900">
+                About
               </a>
-              <a href="/how-it-works" className="text-gray-600 hover:text-gray-900">
-                How it Works
+              <a href="/contact" className="text-gray-600 hover:text-gray-900">
+                Contact
               </a>
-              <a href="/faq" className="text-gray-600 hover:text-gray-900">
-                FAQ
-              </a>
-            </div>
-            <div>
               <a href="/privacy" className="text-gray-600 hover:text-gray-900">
                 Privacy
+              </a>
+              <a href="/terms" className="text-gray-600 hover:text-gray-900">
+                Terms
               </a>
             </div>
           </div>
@@ -48,17 +46,17 @@ export default function Header() {
           {/* Mobile Menu */}
           {isMenuOpen && (
             <div className="sm:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg mt-2 py-2">
-              <a href="/blog" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
-                Blog
+              <a href="/about" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
+                About
               </a>
-              <a href="/how-it-works" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
-                How it Works
-              </a>
-              <a href="/faq" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
-                FAQ
+              <a href="/contact" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
+                Contact
               </a>
               <a href="/privacy" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
                 Privacy
+              </a>
+              <a href="/terms" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
+                Terms
               </a>
             </div>
           )}

@@ -1,68 +1,102 @@
-import Link from 'next/link';
+'use client';
 
+import { Mail, Github, Twitter } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="bg-white border-t">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* About Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">About Temp-emails</h3>
-            <p className="text-gray-600">
-              Temp-emails provides secure, temporary email addresses that expire automatically. 
-              Perfect for protecting your privacy while signing up for services, downloading resources, 
-              or testing applications.
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          {/* Company Info */}
+          <div className="col-span-1">
+            <h3 className="font-semibold text-gray-900 mb-3">Temp-emails</h3>
+            <p className="text-sm text-gray-600">
+              Secure, temporary email addresses that protect your privacy and reduce spam.
             </p>
           </div>
 
           {/* Quick Links */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Quick Links</h3>
+          <div className="col-span-1">
+            <h3 className="font-semibold text-gray-900 mb-3">Quick Links</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/how-it-works" className="text-gray-600 hover:text-gray-900">
-                  How it Works
-                </Link>
+                <a href="/" className="text-sm text-gray-600 hover:text-gray-900">
+                  Home
+                </a>
               </li>
               <li>
-                <Link href="/blog" className="text-gray-600 hover:text-gray-900">
-                  Blog
-                </Link>
+                <a href="/about" className="text-sm text-gray-600 hover:text-gray-900">
+                  About
+                </a>
               </li>
               <li>
-                <Link href="/faq" className="text-gray-600 hover:text-gray-900">
-                  FAQ
-                </Link>
+                <a href="/contact" className="text-sm text-gray-600 hover:text-gray-900">
+                  Contact
+                </a>
               </li>
             </ul>
           </div>
 
           {/* Legal */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Legal</h3>
+          <div className="col-span-1">
+            <h3 className="font-semibold text-gray-900 mb-3">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/privacy" className="text-gray-600 hover:text-gray-900">
+                <a href="/privacy" className="text-sm text-gray-600 hover:text-gray-900">
                   Privacy Policy
-                </Link>
+                </a>
               </li>
               <li>
-                <Link href="/terms" className="text-gray-600 hover:text-gray-900">
+                <a href="/terms" className="text-sm text-gray-600 hover:text-gray-900">
                   Terms of Service
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-gray-600 hover:text-gray-900">
-                  Contact Us
-                </Link>
+                </a>
               </li>
             </ul>
           </div>
+
+          {/* Contact & Social */}
+          <div className="col-span-1">
+            <h3 className="font-semibold text-gray-900 mb-3">Connect</h3>
+            <div className="flex space-x-4">
+              <a
+                href="mailto:najam.saad99@gmail.com"
+                className="text-gray-600 hover:text-gray-900"
+                aria-label="Email"
+              >
+                <Mail size={20} />
+              </a>
+              <a
+                href="https://github.com/yourusername"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-gray-900"
+                aria-label="GitHub"
+              >
+                <Github size={20} />
+              </a>
+              <a
+                href="https://twitter.com/yourusername"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gray-600 hover:text-gray-900"
+                aria-label="Twitter"
+              >
+                <Twitter size={20} />
+              </a>
+            </div>
+          </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t text-center text-gray-600">
-          <p>© {new Date().getFullYear()} Temp-emails. All rights reserved.</p>
+        {/* Bottom Bar */}
+        <div className="mt-8 pt-8 border-t border-gray-200">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-600">
+              © {new Date().getFullYear()} Temp-emails. All rights reserved.
+            </p>
+            <p className="text-sm text-gray-500 mt-2 md:mt-0">
+              Made with ❤️ for privacy
+            </p>
+          </div>
         </div>
       </div>
     </footer>

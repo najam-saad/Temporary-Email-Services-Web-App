@@ -14,15 +14,15 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/api/:path*',
+        source: '/:path*',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type,Authorization' },
-          { key: 'Access-Control-Max-Age', value: '86400' },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://partner.googleadservices.com; frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; img-src 'self' https: data:;"
+          }
         ],
       },
-    ];
+    ]
   },
   async rewrites() {
     return [
