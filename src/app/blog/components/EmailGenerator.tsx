@@ -9,7 +9,7 @@ interface EmailGeneratorProps {
 }
 
 export default function EmailGenerator({ onGenerate, currentEmail }: EmailGeneratorProps) {
-  const [duration, setDuration] = useState(10);
+  const [duration, setDuration] = useState(20); // Default to 20 minutes
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -27,18 +27,28 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
     setError('');
 
     try {
-      const response = await fetch('/api', {
+      // Generate a random email
+      const randomEmail = `${Math.random().toString(36).substring(2, 8)}@tempmail.org`;
+      
+      const response = await fetch('/api/generate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expireTime: duration })
+        body: JSON.stringify({ 
+          email: randomEmail,
+          duration: duration 
+        })
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error);
       
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to generate email');
+      }
+
       onGenerate(data.email, duration);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate email');
+      console.error('Email generation error:', err);
+      setError(typeof err === 'string' ? err : err.message || 'Failed to generate email');
     } finally {
       setIsLoading(false);
     }
@@ -48,20 +58,21 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
     if (currentEmail) {
       await navigator.clipboard.writeText(currentEmail);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // Reset after 2 seconds
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <div className="flex flex-col gap-4">
+    <div className="bg-white rounded-lg shadow-sm border p-4">
+      <div className="flex flex-col gap-3">
         {/* Duration selector */}
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-gray-400" />
+          <Clock className="w-4 h-4 text-gray-400" />
           <select
             value={duration}
             onChange={(e) => setDuration(Number(e.target.value))}
-            className="px-3 py-2 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="px-2 py-1.5 border rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            disabled={isLoading}
           >
             <option value={10}>10 minutes</option>
             <option value={20}>20 minutes</option>
@@ -76,21 +87,21 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
             value={currentEmail || ''}
             readOnly
             placeholder="Click generate to create email"
-            className="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
           {currentEmail && (
             <button
               onClick={handleCopy}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-md transition-colors ${
+              className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-colors ${
                 copied 
                   ? 'bg-green-100 text-green-600' 
                   : 'hover:bg-gray-100 text-gray-400 hover:text-gray-600'
               }`}
             >
               {copied ? (
-                <Check className="w-5 h-5" />
+                <Check className="w-4 h-4" />
               ) : (
-                <Copy className="w-5 h-5" />
+                <Copy className="w-4 h-4" />
               )}
             </button>
           )}
@@ -100,15 +111,15 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
         <button
           onClick={handleGenerate}
           disabled={isLoading}
-          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {isLoading ? 'Generating...' : 'Generate'}
+          {isLoading ? 'Generating...' : 'Generate Email'}
         </button>
-      </div>
 
-      {error && (
-        <p className="text-red-500 text-sm mt-2">{error}</p>
-      )}
+        {error && (
+          <p className="text-red-500 text-sm">{error}</p>
+        )}
+      </div>
     </div>
   );
 }

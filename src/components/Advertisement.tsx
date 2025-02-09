@@ -2,23 +2,23 @@
 
 import { useEffect, useRef } from 'react';
 
-interface AdProps {
+interface AdvertisementProps {
   slot: string;
-  format?: 'auto' | 'fluid' | 'rectangle' | 'horizontal' | 'vertical';
+  format: 'horizontal' | 'vertical' | 'rectangle';
   className?: string;
 }
 
-export default function Advertisement({ slot, format = 'auto', className = '' }: AdProps) {
+export default function Advertisement({ slot, format, className = '' }: AdvertisementProps) {
   const adRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     try {
-      // Check if AdSense is loaded
-      if (window.adsbygoogle) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
+      const adsbygoogle = (window as any).adsbygoogle;
+      if (adsbygoogle && adRef.current) {
+        adsbygoogle.push({});
       }
     } catch (err) {
-      console.error('AdSense error:', err);
+      console.error('Error initializing AdSense:', err);
     }
   }, []);
 
@@ -39,8 +39,13 @@ export default function Advertisement({ slot, format = 'auto', className = '' }:
     <div ref={adRef} className={`ad-container ${className}`}>
       <ins
         className="adsbygoogle"
-        style={getAdStyle(format)}
-        data-ad-client="ca-pub-9262259592522097"
+        style={{
+          display: 'block',
+          ...(format === 'horizontal' && { width: '728px', height: '90px' }),
+          ...(format === 'vertical' && { width: '160px', height: '600px' }),
+          ...(format === 'rectangle' && { width: '300px', height: '250px' }),
+        }}
+        data-ad-client="ca-pub-YOUR_PUBLISHER_ID" // Replace with your AdSense publisher ID
         data-ad-slot={slot}
         data-ad-format={format}
         data-full-width-responsive="true"

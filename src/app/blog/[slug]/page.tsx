@@ -4,12 +4,27 @@ import Image from "next/image";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { articleSchema } from '@/utils/schema';
-import { Head } from "next/head";
 import Script from 'next/script';
-import type { Metadata } from 'next'
+
+interface BlogPost {
+  title: string;
+  date: string;
+  author: string;
+  authorBio: string;
+  coverImage: string;
+  excerpt: string;
+  content: string;
+  tags: string[];
+  readTime: string;
+  relatedPosts?: string[];
+}
+
+interface BlogPosts {
+  [key: string]: BlogPost;
+}
 
 // This would come from your CMS or data source
-const blogPosts = {
+const blogPosts: BlogPosts = {
   '20-min-vs-10min': {
     title: "Why 20 Minutes is Better Than 10 for Temporary Emails",
     date: "2024-03-20",
@@ -17,7 +32,6 @@ const blogPosts = {
     authorBio: "Email security researcher with 10+ years of experience",
     coverImage: "/blog/20min-vs-10min.jpg",
     excerpt: "Discover why a 20-minute window provides the perfect balance between security and usability for temporary emails.",
-    tags: ["email privacy", "temporary email", "digital security", "online privacy"],
     content: `
       <div class="prose prose-lg max-w-none">
         <p class="lead text-xl text-gray-600 mb-8">
@@ -27,6 +41,7 @@ const blogPosts = {
         <p>Our research shows that...</p>
       </div>
     `,
+    tags: ["email privacy", "temporary email", "digital security", "online privacy"],
     readTime: "5 min read",
     relatedPosts: ['another-post-slug']
   }
@@ -36,39 +51,24 @@ type Props = {
   params: { slug: string }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const post = blogPosts[params.slug];
-  
-  return {
-    title: `${post.title} | Temp-emails Blog`,
-    description: post.excerpt,
-    openGraph: {
-      title: post.title,
-      description: post.excerpt,
-      type: 'article',
-      publishedTime: post.date,
-      authors: [post.author],
-      tags: post.tags,
-      images: [
-        {
-          url: post.coverImage,
-          width: 1200,
-          height: 600,
-          alt: post.title,
-        },
-      ],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt,
-      images: [post.coverImage],
-    }
-  }
-}
-
 export default function BlogPost({ params }: Props) {
   const post = blogPosts[params.slug];
+
+  // Handle non-existent posts
+  if (!post) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100 py-12">
+          <div className="max-w-4xl mx-auto px-4">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Post Not Found</h1>
+            <p className="text-gray-600">The blog post you're looking for doesn't exist.</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -85,7 +85,7 @@ export default function BlogPost({ params }: Props) {
         <article className="max-w-4xl mx-auto px-4">
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {post.tags.map(tag => (
+            {post.tags?.map((tag: string) => (
               <span
                 key={tag}
                 className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"

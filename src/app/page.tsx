@@ -2,15 +2,12 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { ErrorBoundary } from './components/ErrorBoundary';
-
 import EmailGenerator from "./blog/components/EmailGenerator";
 import EmailInbox from "./blog/components/EmailInbox";
 import Header from "./blog/components/Header";
 import Footer from "./blog/components/Footer";
 import Image from "next/image";
 import Advertisement from '@/components/Advertisement';
-import PlaceholderAd from '@/components/MonetizationStarter';
-import DonationButton from '@/components/DonationButton';
 
 export default function Home() {
   const [email, setEmail] = useState<string>('');
@@ -56,38 +53,13 @@ export default function Home() {
       <div className="min-h-screen flex flex-col">
         <Header />
         
-        <main className="flex-grow bg-gradient-to-b from-blue-50 to-blue-100">
-          {/* Top Leaderboard */}
-          <Advertisement 
-            slot="1234567890" // Replace with your actual ad unit ID
-            format="horizontal"
-            className="hidden md:block max-w-4xl mx-auto pt-4"
-          />
-          
-          {/* Auto ads will be placed automatically */}
-          
-          {/* In-page format */}
-          <Advertisement 
-            slot="in_content_1"
-            format="rectangle"
-            className="my-6 mx-auto max-w-[336px]"
-          />
-          
-          {/* Overlay formats */}
-          <div className="sticky top-0 z-50">
-            <Advertisement
-              slot="overlay_top"
-              format="horizontal"
-              className="w-full"
-            />
-          </div>
-          
-          <div className="max-w-4xl mx-auto px-4 py-6 sm:py-12">
-            <div className="flex flex-col lg:flex-row gap-8">
+        <main className="flex-grow bg-white">
+          <div className="max-w-4xl mx-auto px-4 py-4">
+            <div className="flex flex-col lg:flex-row gap-4">
               {/* Left Sidebar Ad */}
               <div className="hidden lg:block w-[160px]">
                 <Advertisement
-                  slot="2345678901" // Replace with your actual ad unit ID
+                  slot="2345678901"
                   format="vertical"
                   className="sticky top-4"
                 />
@@ -95,20 +67,20 @@ export default function Home() {
 
               {/* Main Content */}
               <div className="flex-grow">
-                <div className="text-center mb-8">
-                  <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-900 mb-3">
+                <div className="text-center mb-4">
+                  <h1 className="text-2xl sm:text-4xl font-extrabold text-gray-900 mb-2">
                     Temp-emails
                   </h1>
-                  <p className="text-lg sm:text-xl text-gray-700 mb-4 sm:mb-6">
+                  <p className="text-base sm:text-lg text-gray-700 mb-3">
                     Email that expires in minutes
                   </p>
-                  <div className="max-w-lg mx-auto mb-6 sm:mb-8">
+                  <div className="max-w-lg mx-auto mb-4">
                     <Image
                       src="/hero-mail.svg"
                       alt="Secure Email"
-                      width={400}
-                      height={300}
-                      className="mx-auto w-3/4 sm:w-full"
+                      width={300}
+                      height={200}
+                      className="mx-auto w-1/2 sm:w-2/3"
                       priority
                       style={{
                         maxWidth: '100%',
@@ -120,9 +92,9 @@ export default function Home() {
 
                 {/* In-Content Ad */}
                 <Advertisement
-                  slot="3456789012" // Replace with your actual ad unit ID
+                  slot="3456789012"
                   format="rectangle"
-                  className="my-6"
+                  className="my-4"
                 />
 
                 <EmailGenerator 
@@ -131,43 +103,19 @@ export default function Home() {
                 />
 
                 {email && (
-                  <>
-                    {/* Pre-Inbox Ad */}
-                    <Advertisement
-                      slot="pre_inbox"
-                      format="rectangle"
-                      className="my-6"
-                    />
+                  <div className="mt-4">
                     <EmailInbox 
                       email={email} 
                       expiresAt={expiresAt}
                       onExpire={handleExpire}
                     />
-                  </>
+                  </div>
                 )}
-
-                {/* Support button */}
-                <DonationButton />
-              </div>
-
-              {/* Right Sidebar Ad */}
-              <div className="hidden lg:block w-[300px]">
-                <Advertisement
-                  slot="right_sidebar"
-                  format="vertical"
-                  className="sticky top-4"
-                />
               </div>
             </div>
           </div>
         </main>
 
-        {/* Footer Ad */}
-        <Advertisement
-          slot="footer_banner"
-          format="horizontal"
-          className="max-w-4xl mx-auto py-4"
-        />
         <Footer />
       </div>
     </ErrorBoundary>
