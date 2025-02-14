@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
@@ -7,61 +9,77 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <nav className="relative">
-          {/* Desktop Menu */}
-          <div className="hidden sm:flex justify-between items-center">
-            <div className="flex items-center space-x-8">
-              <a href="/" className="text-gray-900 font-semibold">
-                Temp-emails
-              </a>
-              <a href="/about" className="text-gray-600 hover:text-gray-900">
-                About
-              </a>
-              <a href="/contact" className="text-gray-600 hover:text-gray-900">
-                Contact
-              </a>
-              <a href="/privacy" className="text-gray-600 hover:text-gray-900">
-                Privacy
-              </a>
-              <a href="/terms" className="text-gray-600 hover:text-gray-900">
-                Terms
-              </a>
-            </div>
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex">
+            <Link href="/" className="flex items-center">
+              <span className="text-xl font-bold text-blue-600">Temp-emails</span>
+            </Link>
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="sm:hidden flex justify-between items-center">
-            <a href="/" className="text-gray-900 font-semibold">
-              Temp-emails
-            </a>
+          {/* Desktop Navigation */}
+          <div className="hidden sm:flex sm:items-center sm:space-x-8">
+            <Link href="/blog" className="text-gray-700 hover:text-blue-600">
+              Blog
+            </Link>
+            <Link href="/about" className="text-gray-700 hover:text-blue-600">
+              About
+            </Link>
+            <Link href="/privacy" className="text-gray-700 hover:text-blue-600">
+              Privacy
+            </Link>
+            <Link href="/contact" className="text-gray-700 hover:text-blue-600">
+              Contact
+            </Link>
+          </div>
+
+          {/* Mobile menu button */}
+          <div className="flex items-center sm:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="text-gray-500 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
             >
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+              {isMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </button>
           </div>
+        </div>
 
-          {/* Mobile Menu */}
-          {isMenuOpen && (
-            <div className="sm:hidden absolute top-full left-0 right-0 bg-white shadow-lg rounded-b-lg mt-2 py-2">
-              <a href="/about" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="sm:hidden">
+            <div className="pt-2 pb-3 space-y-1">
+              <Link
+                href="/blog"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+              >
+                Blog
+              </Link>
+              <Link
+                href="/about"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+              >
                 About
-              </a>
-              <a href="/contact" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
-                Contact
-              </a>
-              <a href="/privacy" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
+              </Link>
+              <Link
+                href="/privacy"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+              >
                 Privacy
-              </a>
-              <a href="/terms" className="block px-4 py-2 text-gray-600 hover:bg-gray-50">
-                Terms
-              </a>
+              </Link>
+              <Link
+                href="/contact"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+              >
+                Contact
+              </Link>
             </div>
-          )}
-        </nav>
-      </div>
+          </div>
+        )}
+      </nav>
     </header>
   );
 } 

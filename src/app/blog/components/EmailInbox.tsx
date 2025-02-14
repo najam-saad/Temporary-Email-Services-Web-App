@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
-import { Mail, RefreshCw, Search, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
+import { Socket, io } from 'socket.io-client';
+import { Search, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
 import CountdownTimer from './CountdownTimer';
 
 interface EmailMessage {
@@ -11,6 +11,7 @@ interface EmailMessage {
   to: string;
   subject: string;
   content: string;
+  html?: string;
   receivedAt: number;
 }
 
@@ -21,48 +22,81 @@ interface EmailInboxProps {
 }
 
 const MESSAGES_PER_PAGE = 5;
+let socket: Socket | null = null;
 
 export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxProps) {
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [filteredMessages, setFilteredMessages] = useState<EmailMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [lastChecked, setLastChecked] = useState<Date>(new Date());
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [copied, setCopied] = useState(false);
+  const [lastChecked, setLastChecked] = useState<Date>(new Date());
 
-  const fetchMessages = useCallback(async () => {
-    if (!email) return;
-    
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      const response = await axios.get(`/api/messages/${encodeURIComponent(email)}`);
+  // Initialize Socket.io connection
+  useEffect(() => {
+    if (!socket) {
+      socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
+        withCredentials: true,
+        transports: ['websocket'],
+        reconnection: true,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000
+      });
       
-      if (!response.data || !Array.isArray(response.data.messages)) {
-        setMessages([]);
-        setFilteredMessages([]);
-        return;
-      }
+      socket.on('connect', () => {
+        console.log('Connected to Socket.io server');
+        setError('');
+      });
 
-      const sortedMessages = response.data.messages
-        .filter((msg: EmailMessage) => msg.to === email)
-        .sort((a: EmailMessage, b: EmailMessage) => b.receivedAt - a.receivedAt);
-
-      setMessages(sortedMessages);
-      setFilteredMessages(sortedMessages);
-      setLastChecked(new Date());
-    } catch (err: any) {
-      console.error('Failed to fetch messages:', err);
-      setError(err.response?.data?.error || 'Failed to fetch messages');
-      setMessages([]);
-      setFilteredMessages([]);
-    } finally {
-      setIsLoading(false);
+      socket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        setError('Failed to connect to message server');
+      });
     }
-  }, [email]);
+
+    return () => {
+      if (socket) {
+        socket.disconnect();
+        socket = null;
+      }
+    };
+  }, []);
+
+  // Subscribe to email updates
+  useEffect(() => {
+    if (socket && email) {
+      socket.emit('subscribe', email);
+
+      socket.on('messages', (initialMessages: EmailMessage[]) => {
+        setMessages(initialMessages);
+        setFilteredMessages(initialMessages);
+        setLastChecked(new Date());
+      });
+
+      socket.on('new-message', (newMessage: EmailMessage) => {
+        setMessages(prev => {
+          const updated = [newMessage, ...prev];
+          setFilteredMessages(
+            updated.filter(message =>
+              message.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              message.from.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              message.content.toLowerCase().includes(searchTerm.toLowerCase())
+            )
+          );
+          return updated;
+        });
+        setLastChecked(new Date());
+      });
+
+      return () => {
+        socket?.emit('unsubscribe', email);
+        socket?.off('messages');
+        socket?.off('new-message');
+      };
+    }
+  }, [email, searchTerm]);
 
   // Filter messages when search term changes
   useEffect(() => {
@@ -75,24 +109,17 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
     setCurrentPage(1);
   }, [searchTerm, messages]);
 
-  // Initial fetch and periodic refresh
-  useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 30000);
-    return () => clearInterval(interval);
-  }, [fetchMessages]);
+  const handleCopy = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const totalPages = Math.ceil(filteredMessages.length / MESSAGES_PER_PAGE);
   const paginatedMessages = filteredMessages.slice(
     (currentPage - 1) * MESSAGES_PER_PAGE,
     currentPage * MESSAGES_PER_PAGE
   );
-
-  const handleCopy = async (text: string) => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="mt-4 bg-white rounded-lg shadow p-3 sm:p-4">
@@ -117,14 +144,6 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <CountdownTimer expiryTime={expiresAt} onExpire={onExpire} />
-          <button
-            onClick={fetchMessages}
-            disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 active:bg-blue-200 transition-colors w-full sm:w-auto justify-center text-sm"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -164,7 +183,12 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
                 </div>
                 <p className="text-sm font-medium">{message.subject || '(No subject)'}</p>
                 {message.content && (
-                  <div className="mt-1.5 text-sm text-gray-600">{message.content}</div>
+                  <div 
+                    className="mt-1.5 text-sm text-gray-600"
+                    dangerouslySetInnerHTML={{ 
+                      __html: message.html || message.content 
+                    }}
+                  />
                 )}
               </div>
             ))}

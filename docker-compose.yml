@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXT_PUBLIC_SOCKET_URL=${NEXT_PUBLIC_SOCKET_URL}
+      - NODE_ENV=${NODE_ENV:-production}
+      - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
+      - MAILCOW_TZ=${MAILCOW_TZ}
+    restart: unless-stopped
+    depends_on:
+      - mailcow
+
+  mailcow:
+    build:
+      context: ./docker/mailcow
+      dockerfile: Dockerfile
+    ports:
+      - "25:25"    # SMTP
+      - "465:465"  # SMTPS
+      - "587:587"  # Submission
+      - "143:143"  # IMAP
+      - "993:993"  # IMAPS
+      - "110:110"  # POP3
+      - "995:995"  # POP3S
+    environment:
+      - MAILCOW_HOSTNAME=${MAILCOW_HOSTNAME}
+      - MAILCOW_TZ=${MAILCOW_TZ}
+    volumes:
+      - mailcow_data:/var/lib/mailcow
+    restart: unless-stopped
+
+volumes:
+  mailcow_data: 

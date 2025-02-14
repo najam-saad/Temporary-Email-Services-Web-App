@@ -86,9 +86,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Content Security Policy */}
+        <meta
+          httpEquiv="Content-Security-Policy"
+          content="default-src 'self'; font-src 'self' https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; connect-src 'self' http://localhost:3001 ws://localhost:3001; script-src 'self' 'unsafe-eval' 'unsafe-inline';"
+        />
+        
         {/* Preconnect to required origins */}
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="preconnect" href="https://pagead2.googlesyndication.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
         {/* Favicon and app icons */}
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />

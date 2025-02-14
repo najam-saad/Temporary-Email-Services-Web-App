@@ -1,0 +1,33 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm run build"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/"
+healthcheckTimeout = 100
+restartPolicyType = "on_failure"
+numReplicas = 1
+
+[deploy.env]
+NODE_ENV = "production"
+
+[[services]]
+name = "app"
+internal_port = 3000
+protocol = "tcp"
+
+[services.ports]
+http = 3000
+socket = 3001
+smtp = 25
+smtps = 465
+submission = 587
+imap = 143
+imaps = 993
+
+[database]
+name = "postgres"
+
+[mail]
+name = "mailcow" 
