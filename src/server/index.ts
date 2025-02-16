@@ -33,22 +33,14 @@ app.get('/', (req, res) => {
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
-  console.log('Health check requested');
+  console.log('Health check requested at:', new Date().toISOString());
   try {
-    console.log('Environment variables check:');
-    console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
-    console.log('- DIRECT_URL:', process.env.DIRECT_URL ? 'Set' : 'Not set');
-    console.log('- NODE_ENV:', process.env.NODE_ENV);
-    
     // Try to connect to the database
-    console.log('Attempting database connection...');
     await prisma.$connect();
     
     // Simple query to verify connection
     const result = await prisma.$queryRaw`SELECT 1 as connected`;
-    console.log('Database query successful:', result);
     
-    // Send success response
     res.status(200).json({ 
       status: 'healthy',
       message: 'Service is running',
@@ -57,15 +49,6 @@ app.get('/health', async (req, res) => {
     });
   } catch (error) {
     console.error('Health check failed:', error);
-    // Log detailed error information
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
-    }
-    
     res.status(500).json({ 
       status: 'unhealthy',
       message: 'Service is not healthy',

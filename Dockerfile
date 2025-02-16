@@ -29,7 +29,7 @@ FROM node:18-alpine AS runner
 WORKDIR /app
 
 # Install OpenSSL and production dependencies
-RUN apk add --no-cache openssl libc6-compat
+RUN apk add --no-cache openssl libc6-compat curl
 
 # Copy necessary files from builder
 COPY --from=builder /app/package*.json ./
@@ -52,6 +52,10 @@ ENV PORT=3000
 
 # Expose port
 EXPOSE 3000
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
 
 # Start the application
 CMD ["node", "dist/server/index.js"] 
