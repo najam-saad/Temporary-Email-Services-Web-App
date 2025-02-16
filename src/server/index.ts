@@ -16,27 +16,51 @@ const io = new Server(httpServer, {
   }
 });
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  log: ['query', 'error', 'warn']
+});
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Debug logging middleware
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
+});
+
+// Basic root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
+  console.log('Health check requested');
   try {
+    console.log('Attempting database connection...');
+    console.log('Database URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+    
+    await prisma.$connect();
     await prisma.$queryRaw`SELECT 1`;
-    res.status(200).json({ status: 'healthy', message: 'Service is running' });
+    console.log('Database connection successful');
+    
+    res.status(200).json({ 
+      status: 'healthy', 
+      message: 'Service is running',
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Health check failed:', error);
-    res.status(500).json({ status: 'unhealthy', message: 'Service is not healthy' });
+    res.status(500).json({ 
+      status: 'unhealthy', 
+      message: 'Service is not healthy',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    });
+  } finally {
+    try {
+      await prisma.$disconnect();
+    } catch (error) {
+      console.error('Error disconnecting from database:', error);
+    }
   }
 });
 
@@ -53,6 +77,7 @@ io.on('connection', (socket) => {
       socket.emit('messages', messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
+      socket.emit('error', { message: 'Failed to fetch messages' });
     }
   });
 
@@ -118,18 +143,36 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database connection before starting server
 async function startServer() {
+  console.log('Starting server...');
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Port:', PORT);
+  
   try {
-    // Test database connection
+    console.log('Attempting initial database connection...');
     await prisma.$connect();
     console.log('Database connection established');
 
     httpServer.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log('Server startup complete');
     });
   } catch (error) {
     console.error('Failed to start server:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', error.message);
+      console.error('Stack trace:', error.stack);
+    }
     process.exit(1);
   }
 }
+
+// Handle uncaught errors
+process.on('unhandledRejection', (error) => {
+  console.error('Unhandled rejection:', error);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
 
 startServer(); 
