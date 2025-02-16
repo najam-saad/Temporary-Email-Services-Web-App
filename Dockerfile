@@ -13,6 +13,9 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN npm ci
 
+# Generate Prisma Client
+RUN npx prisma generate
+
 # Copy source code
 COPY . .
 
@@ -24,7 +27,7 @@ FROM node:18-alpine AS runner
 
 WORKDIR /app
 
-# Install OpenSSL
+# Install OpenSSL and production dependencies
 RUN apk add --no-cache openssl libc6-compat
 
 # Copy necessary files from builder
@@ -34,9 +37,11 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Install production dependencies
-RUN npm install --production
+RUN npm install --production && \
+    npx prisma generate
 
 # Set environment variables
 ENV NODE_ENV=production
