@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getAllPosts } from '@/data/blog-posts';
 
-const sitemap = (): MetadataRoute.Sitemap => {
+export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
   const baseUrl = 'https://tempfreeemail.com';
 
@@ -46,6 +46,4 @@ const sitemap = (): MetadataRoute.Sitemap => {
   }));
 
   return [...routes, ...blogRoutes];
-};
-
-export default sitemap; 
+} 
