@@ -1,32 +1,46 @@
 import { NextResponse } from 'next/server';
+import { EmailService } from '../../../server/services/emailService';
+import { headers } from 'next/headers';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, duration } = body;
-
-    if (!email || !duration) {
+    const { duration } = body;
+    const headersList = headers();
+    
+    if (!duration || duration < 10 || duration > 30) {
       return NextResponse.json(
-        { message: 'Email and duration are required' },
+        { message: 'Duration must be between 10 and 30 minutes' },
         { status: 400 }
       );
     }
 
-    // Here you would typically:
-    // 1. Validate the email format
-    // 2. Store the email with expiration in your database/cache
-    // 3. Set up any necessary email forwarding
+    const ipAddress = headersList.get('x-forwarded-for') || 
+                     headersList.get('x-real-ip') || 
+                     'unknown';
+    const userAgent = headersList.get('user-agent') || undefined;
 
-    // For now, we'll just return the generated email
+    const result = await EmailService.createTempEmail(ipAddress, userAgent, duration);
+    
+    if (!result) {
+      return NextResponse.json(
+        { message: 'Failed to generate email' },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
-      email,
-      expiresAt: Date.now() + (duration * 60 * 1000), // Convert minutes to milliseconds
+      email: result.email,
+      expiresAt: result.expiresAt.getTime(),
       message: 'Email generated successfully'
     });
   } catch (error) {
     console.error('Email generation error:', error);
     return NextResponse.json(
-      { message: 'Failed to generate email' },
+      { 
+        message: error instanceof Error ? error.message : 'Failed to generate email',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

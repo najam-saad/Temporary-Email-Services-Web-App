@@ -18,7 +18,17 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://partner.googleadservices.com; frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com; img-src 'self' https: data:;"
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://partner.googleadservices.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' https: data:",
+              "connect-src 'self' ws: wss: http://localhost:3001 https://localhost:3001",
+              "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+              "worker-src 'self' blob:",
+              "manifest-src 'self'"
+            ].join('; ')
           }
         ],
       },
@@ -42,9 +52,6 @@ const nextConfig = {
     ];
   },
   output: 'standalone',
-  experimental: {
-    serverActions: true,
-  },
 }
 
 module.exports = nextConfig 

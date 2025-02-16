@@ -32,6 +32,7 @@ imaps = 993
 name = "postgres"
 plan = "free"
 waitForSearcher = true
+internal = true
 
 [mail]
 name = "mailcow" 

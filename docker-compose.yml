@@ -14,24 +14,7 @@ services:
       - MAILCOW_TZ=${MAILCOW_TZ}
     restart: unless-stopped
     depends_on:
-      - postgres
       - mailcow
-
-  postgres:
-    image: postgres:15-alpine
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=tempmail
-      - POSTGRES_PASSWORD=temp_secure_pass_123
-      - POSTGRES_DB=tempmail_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tempmail -d tempmail_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   mailcow:
     build:
@@ -53,5 +36,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
   mailcow_data: 

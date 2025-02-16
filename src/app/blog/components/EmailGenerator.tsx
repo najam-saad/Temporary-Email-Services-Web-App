@@ -27,16 +27,10 @@ export default function EmailGenerator({ onGenerate, currentEmail }: EmailGenera
     setError('');
 
     try {
-      // Generate a random email
-      const randomEmail = `${Math.random().toString(36).substring(2, 8)}@tempmail.org`;
-      
       const response = await fetch('/api/generate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: randomEmail,
-          duration: duration 
-        })
+        body: JSON.stringify({ duration })
       });
 
       const data = await response.json();

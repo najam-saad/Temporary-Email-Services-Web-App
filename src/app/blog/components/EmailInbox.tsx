@@ -38,11 +38,15 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
   useEffect(() => {
     if (!socket) {
       socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
-        withCredentials: true,
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
+        withCredentials: true,
+        timeout: 60000,
+        autoConnect: true,
+        path: '/socket.io',
+        forceNew: true
       });
       
       socket.on('connect', () => {
@@ -52,7 +56,12 @@ export default function EmailInbox({ email, expiresAt, onExpire }: EmailInboxPro
 
       socket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
-        setError('Failed to connect to message server');
+        setError('Failed to connect to message server. Retrying...');
+      });
+
+      socket.on('error', (error) => {
+        console.error('Socket error:', error);
+        setError('An error occurred with the message server connection.');
       });
     }
 
