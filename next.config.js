@@ -30,6 +30,10 @@ const nextConfig = {
         source: '/api/:path*',
         destination: '/api/:path*',
       },
+      {
+        source: '/health',
+        destination: '/api/health',
+      }
     ];
   },
   output: 'standalone',

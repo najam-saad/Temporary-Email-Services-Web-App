@@ -4,10 +4,11 @@ buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
-healthcheckPath = "/"
-healthcheckTimeout = 100
+healthcheckPath = "/health"
+healthcheckTimeout = 180
 restartPolicyType = "on_failure"
 numReplicas = 1
+waitForHealthcheck = true
 
 [deploy.env]
 NODE_ENV = "production"
@@ -16,6 +17,7 @@ NODE_ENV = "production"
 name = "app"
 internal_port = 3000
 protocol = "tcp"
+waitForSearcher = true
 
 [services.ports]
 http = 3000
@@ -28,6 +30,8 @@ imaps = 993
 
 [database]
 name = "postgres"
+plan = "free"
+waitForSearcher = true
 
 [mail]
 name = "mailcow" 
