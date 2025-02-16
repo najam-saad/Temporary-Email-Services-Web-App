@@ -160,36 +160,63 @@ const PORT = process.env.PORT || 3001;
 
 // Initialize database connection before starting server
 async function startServer() {
-  console.log('Starting server...');
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('Port:', PORT);
+  console.log('=== Server Startup ===');
+  console.log('Time:', new Date().toISOString());
+  console.log('Environment Variables:');
+  console.log('- NODE_ENV:', process.env.NODE_ENV);
+  console.log('- PORT:', PORT);
+  console.log('- DATABASE_URL:', process.env.DATABASE_URL ? 'Set' : 'Not set');
+  console.log('- DIRECT_URL:', process.env.DIRECT_URL ? 'Set' : 'Not set');
   
+  // Flush stdout to ensure logs are visible
+  process.stdout.write('');
+
   try {
-    console.log('Attempting initial database connection...');
+    console.log('\nAttempting initial database connection...');
     await prisma.$connect();
-    console.log('Database connection established');
+    console.log('✓ Database connection established');
+
+    // Test query to verify connection
+    const result = await prisma.$queryRaw`SELECT 1 as connected`;
+    console.log('✓ Database query successful:', result);
 
     httpServer.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log('Server startup complete');
+      console.log(`\n✓ Server running on port ${PORT}`);
+      console.log('✓ Server startup complete\n');
+      
+      // Flush stdout again after startup
+      process.stdout.write('');
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error('\n❌ Failed to start server:', error);
     if (error instanceof Error) {
-      console.error('Error details:', error.message);
-      console.error('Stack trace:', error.stack);
+      console.error('Error details:');
+      console.error('- Message:', error.message);
+      console.error('- Name:', error.name);
+      console.error('- Stack:', error.stack);
     }
-    process.exit(1);
+    
+    // Ensure error logs are visible before exiting
+    process.stdout.write('');
+    
+    // Exit with error after a short delay to ensure logs are written
+    setTimeout(() => process.exit(1), 1000);
   }
 }
 
 // Handle uncaught errors
 process.on('unhandledRejection', (error) => {
-  console.error('Unhandled rejection:', error);
+  console.error('\n❌ Unhandled rejection:', error);
+  // Ensure logs are written
+  process.stdout.write('');
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught exception:', error);
+  console.error('\n❌ Uncaught exception:', error);
+  // Ensure logs are written
+  process.stdout.write('');
 });
 
+// Start server
+console.log('\nStarting server...');
 startServer(); 
