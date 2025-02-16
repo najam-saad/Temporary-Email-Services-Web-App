@@ -9,9 +9,6 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  // Add shadowDatabaseUrl for migrations in development
-  shadowDatabaseUrl = env("SHADOW_DATABASE_URL") // Only needed for development
-  directUrl = env("DIRECT_URL") // Used for direct connection in production
 }
 
 model TempEmail {
