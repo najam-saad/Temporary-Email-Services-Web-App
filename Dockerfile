@@ -9,6 +9,7 @@ RUN apk add --no-cache openssl libc6-compat
 # Copy package files
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY tsconfig*.json ./
 
 # Install dependencies
 RUN npm ci
@@ -31,6 +32,7 @@ WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat
 
 # Copy necessary files from builder
+COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
@@ -40,7 +42,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Install production dependencies
+# Install production dependencies and generate Prisma client
 RUN npm install --production && \
     npx prisma generate
 

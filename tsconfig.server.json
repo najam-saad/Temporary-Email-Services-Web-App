@@ -5,7 +5,9 @@
     "outDir": "dist",
     "noEmit": false,
     "moduleResolution": "node",
+    "isolatedModules": false,
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src/server/**/*", "src/types/**/*.d.ts"]
+  "include": ["src/server/**/*", "src/types/**/*.d.ts", "src/lib/**/*"],
+  "exclude": ["node_modules"]
 } 
