@@ -42,9 +42,8 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-# Install production dependencies and generate Prisma client
-RUN npm install --production && \
-    npx prisma generate
+# Install production dependencies only (no Prisma generation needed)
+RUN npm install --production
 
 # Set environment variables
 ENV NODE_ENV=production
@@ -55,7 +54,7 @@ EXPOSE 3000
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Start the application
 CMD ["node", "dist/server/index.js"] 
